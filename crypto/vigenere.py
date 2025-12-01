@@ -1,146 +1,334 @@
+# crypto/vigenere.py
 """
-Vigenère Cipher Breaker (Key unknown)
--------------------------------------
-- Dùng Index of Coincidence (IC) để đoán độ dài khóa.
-- Mỗi "cột" là một Caesar -> phá bằng chi-square.
+Task 3 - Vigenère cipher breaker (dùng Index of Coincidence + chi-square)
+
+- Không biết trước độ dài khóa.
+- Bước 1: Dùng Index of Coincidence (IC) để ước lượng một số độ dài khóa ứng viên.
+- Bước 2: Với mỗi độ dài khóa ứng viên:
+    + Chia ciphertext thành các "Caesar-subsets".
+    + Giải từng subset bằng phân tích tần suất (chi-square).
+- Bước 3: Chọn key cho ra plaintext tiếng Anh nhất (chi-square nhỏ nhất).
+
+Public API cho Flask:
+    from crypto.vigenere import break_vigenere
+    key, plaintext, score = break_vigenere(ciphertext)
+
+CLI:
+    python -m crypto.vigenere -i data/cipher.txt -o output_task3.txt
+
+    output_task3.txt:
+        dòng 1: khóa (key) tìm được
+        dòng 2+: plaintext
 """
 
 import string
-from math import gcd
+import random
 
 ALPHABET = string.ascii_uppercase
-ALPHABET_LEN = 26
+
+# Tần suất chữ cái tiếng Anh chuẩn
+ENGLISH_FREQ = {
+    "A": 0.08167,
+    "B": 0.01492,
+    "C": 0.02782,
+    "D": 0.04253,
+    "E": 0.12702,
+    "F": 0.02228,
+    "G": 0.02015,
+    "H": 0.06094,
+    "I": 0.06966,
+    "J": 0.00153,
+    "K": 0.00772,
+    "L": 0.04025,
+    "M": 0.02406,
+    "N": 0.06749,
+    "O": 0.07507,
+    "P": 0.01929,
+    "Q": 0.00095,
+    "R": 0.05987,
+    "S": 0.06327,
+    "T": 0.09056,
+    "U": 0.02758,
+    "V": 0.00978,
+    "W": 0.02360,
+    "X": 0.00150,
+    "Y": 0.01974,
+    "Z": 0.00074,
+}
 
 
-def _only_letters(text: str) -> str:
-    return ''.join(c for c in text.upper() if c.isalpha())
+# ===================== 1. Mã hóa / giải mã cơ bản ======================= #
+
+
+def encrypt_vigenere(plaintext: str, key: str) -> str:
+    """
+    Vigenère chuẩn: C = P + K (mod 26).
+    Dùng cho test / demo, không dùng trong solver chính.
+    """
+    key = key.upper()
+    res = []
+    ki = 0
+    for ch in plaintext:
+        if ch.isalpha():
+            base = "A" if ch.isupper() else "a"
+            p = ord(ch.upper()) - ord("A")
+            k = ord(key[ki % len(key)]) - ord("A")
+            c = (p + k) % 26
+            res.append(chr(ord(base) + c))
+            ki += 1
+        else:
+            res.append(ch)
+    return "".join(res)
+
+
+def decrypt_vigenere(ciphertext: str, key: str) -> str:
+    """
+    Giải mã Vigenère chuẩn: P = C - K (mod 26).
+    Chỉ dịch A–Z/a–z, giữ nguyên ký tự khác, bảo toàn hoa/thường.
+    """
+    key = key.upper()
+    res = []
+    ki = 0
+    for ch in ciphertext:
+        if ch.isalpha():
+            base = "A" if ch.isupper() else "a"
+            c = ord(ch.upper()) - ord("A")
+            k = ord(key[ki % len(key)]) - ord("A")
+            p = (c - k) % 26
+            res.append(chr(ord(base) + p))
+            ki += 1
+        else:
+            res.append(ch)
+    return "".join(res)
+
+
+# ========================= 2. Index of Coincidence ======================= #
 
 
 def _index_of_coincidence(seq: str) -> float:
-    """
-    IC = sum(f_i (f_i - 1)) / (N (N - 1))
-    """
+    """IC cho chuỗi seq (chỉ gồm A-Z)."""
     N = len(seq)
     if N <= 1:
         return 0.0
-    counts = [0] * ALPHABET_LEN
-    for c in seq:
-        if c in ALPHABET:
-            counts[ord(c) - ord('A')] += 1
-    num = sum(f * (f - 1) for f in counts)
-    den = N * (N - 1)
-    return num / den if den else 0.0
+    counts = [0] * 26
+    for ch in seq:
+        if ch in ALPHABET:
+            counts[ord(ch) - 65] += 1
+    numerator = sum(c * (c - 1) for c in counts)
+    return numerator / (N * (N - 1))
 
 
-def _guess_key_length(ciphertext: str, max_len: int = 20) -> int:
+def _guess_key_lengths_by_ic(letters: str, max_key_len: int = 20, top_k: int = 7):
     """
-    Đoán độ dài khóa bằng IC: thử L=1..max_len, chọn L có average IC gần 0.065 nhất.
+    Dùng Index of Coincidence để ước lượng các độ dài khóa tiềm năng.
+
+    Với mỗi key_len:
+        - Chia letters thành key_len subset: vị trí i, i+k, i+2k, ...
+        - Tính IC của từng subset, lấy trung bình.
+    IC càng cao (gần IC tiếng Anh ~0.065) thì key_len càng có khả năng đúng.
+
+    Trả về list (key_len, avg_ic) đã sort giảm dần theo avg_ic, lấy top_k.
     """
-    filtered = _only_letters(ciphertext)
-    if not filtered:
-        return 1
+    candidates = []
 
-    best_L = 1
-    best_diff = 1e9
-    target_IC = 0.065
+    for key_len in range(2, max_key_len + 1):  # bỏ key_len = 1 (Caesar)
+        ics = []
+        for i in range(key_len):
+            subset = letters[i::key_len]
+            if len(subset) > 1:
+                ics.append(_index_of_coincidence(subset))
+        if not ics:
+            continue
+        avg_ic = sum(ics) / len(ics)
+        candidates.append((key_len, avg_ic))
 
-    for L in range(1, max_len + 1):
-        columns = [''] * L
-        for i, c in enumerate(filtered):
-            columns[i % L] += c
-        avg_ic = sum(_index_of_coincidence(col) for col in columns) / L
-        diff = abs(avg_ic - target_IC)
-        if diff < best_diff:
-            best_diff = diff
-            best_L = L
-
-    return best_L
+    candidates.sort(key=lambda x: -x[1])  # avg_ic lớn hơn → tốt hơn
+    return candidates[:top_k]
 
 
-# Chi-square cho 1 chuỗi (giống Task 1, nhưng gọn)
-ENGLISH_FREQ = [
-    8.17, 1.49, 2.78, 4.25, 12.70, 2.23, 2.02,
-    6.09, 6.97, 0.15, 0.77, 4.03, 2.41, 6.75,
-    7.51, 1.93, 0.10, 5.99, 6.33, 9.06,
-    2.76, 0.98, 2.36, 0.15, 1.97, 0.07
-]
+# ======================== 3. Phân tích tần suất Caesar =================== #
 
 
-def _chi_square(text: str) -> float:
-    counts = [0] * ALPHABET_LEN
-    total = 0
-    for c in text:
-        if c in ALPHABET:
-            idx = ord(c) - ord('A')
-            counts[idx] += 1
-            total += 1
-    if total == 0:
-        return 1e9
+def _best_shift_for_subset(subset: str) -> int:
+    """
+    subset: chuỗi chỉ gồm A-Z, thuộc về 1 vị trí khóa.
+    Tìm shift (0..25) sao cho chi-square so với ENGLISH_FREQ là nhỏ nhất.
+    shift chính là giá trị key-letter (A=0, B=1, ...).
+    """
+    N = len(subset)
+    if N == 0:
+        return 0
+
+    best_shift = 0
+    best_chi = float("inf")
+
+    for shift in range(26):
+        counts = [0] * 26
+        for ch in subset:
+            c = ord(ch) - 65
+            # P = C - K, ở đây shift = K
+            p = (c - shift) % 26
+            counts[p] += 1
+
+        chi = 0.0
+        for i, obs in enumerate(counts):
+            expected = ENGLISH_FREQ[ALPHABET[i]] * N
+            if expected > 0:
+                chi += (obs - expected) ** 2 / expected
+
+        if chi < best_chi:
+            best_chi = chi
+            best_shift = shift
+
+    return best_shift
+
+
+# =========================== 4. Scoring plaintext ======================== #
+
+
+def _chi_square_text(text: str) -> float:
+    """Chi-square của toàn bộ plaintext (so với ENGLISH_FREQ)."""
+    counts = [0] * 26
+    N = 0
+    for ch in text.upper():
+        if ch in ALPHABET:
+            counts[ord(ch) - 65] += 1
+            N += 1
+
+    if N == 0:
+        return float("inf")
+
     chi = 0.0
-    for i in range(ALPHABET_LEN):
-        observed = counts[i]
-        expected = ENGLISH_FREQ[i] * total / 100
+    for i, obs in enumerate(counts):
+        expected = ENGLISH_FREQ[ALPHABET[i]] * N
         if expected > 0:
-            chi += (observed - expected) ** 2 / expected
+            chi += (obs - expected) ** 2 / expected
     return chi
 
 
-def _best_shift_for_column(col: str) -> int:
-    """
-    Tìm shift (0-25) tốt nhất cho 1 cột (coi như Caesar).
-    """
-    best_k = 0
-    best_chi = 1e9
-    for k in range(26):
-        decrypted = []
-        for c in col:
-            if c in ALPHABET:
-                decrypted.append(chr((ord(c) - ord('A') - k) % 26 + ord('A')))
-        chi = _chi_square(''.join(decrypted))
-        if chi < best_chi:
-            best_chi = chi
-            best_k = k
-    return best_k
+# ========================== 5. Solver chính ============================== #
 
 
-def _decrypt_vigenere(ciphertext: str, key: str) -> str:
+def _break_vigenere_internal(ciphertext: str, max_key_len: int = 20, top_k: int = 7):
     """
-    Giải mã, giữ nguyên non-letter, nhưng key chỉ áp dụng lên chữ cái.
+    Solver chinh:
+    - Lay chuoi letters = chi cac chu cai A-Z tu ciphertext.
+    - Dung IC de chon ra mot so do dai khoa ung vien (top_k).
+    - Moi key_len ung vien:
+        + Chia letters thanh key_len subset.
+        + Moi subset giai bang chi-square -> 1 ky tu khoa.
+        + Ghep thanh key, giai toan ciphertext, tinh chi-square toan cuc.
+    - Chon key co chi-square nho nhat.
     """
-    res = []
-    key = key.upper()
-    key_len = len(key)
-    j = 0
-    for c in ciphertext:
-        if c.isalpha():
-            base = 'A' if c.isupper() else 'a'
-            k = ord(key[j % key_len]) - ord('A')
-            p = chr((ord(c) - ord(base) - k) % 26 + ord(base))
-            res.append(p)
-            j += 1
-        else:
-            res.append(c)
-    return ''.join(res)
+    letters = ''.join(ch for ch in ciphertext.upper() if ch in ALPHABET)
+    if len(letters) < 20:
+        # too short to guess reliably
+        return 'A', decrypt_vigenere(ciphertext, 'A'), float('inf')
+
+    candidates = _guess_key_lengths_by_ic(letters, max_key_len, top_k)
+
+    best_key = None
+    best_plain = None
+    best_score = float('inf')
+
+    for key_len, avg_ic in candidates:
+        shifts = []
+        for i in range(key_len):
+            subset = ''.join(letters[j] for j in range(i, len(letters), key_len))
+            shift = _best_shift_for_subset(subset)
+            shifts.append(shift)
+
+        key = ''.join(ALPHABET[s] for s in shifts)
+        plain = decrypt_vigenere(ciphertext, key)
+
+        chi = _chi_square_text(plain)
+        if chi < best_score:
+            best_score = chi
+            best_key = key
+            best_plain = plain
+
+    if best_key is not None:
+        best_key = _reduce_repeating_key(best_key)
+        best_plain = decrypt_vigenere(ciphertext, best_key)
+
+    return best_key, best_plain, best_score
+
 
 
 def break_vigenere(ciphertext: str):
     """
-    API chính cho Flask: trả về (key, plaintext)
+    Hàm public dùng trong Flask.
+
+    Trả về:
+        key (str): khóa Vigenère (A-Z).
+        plaintext (str): ciphertext đã giải.
+        score (float): chi-square (càng nhỏ càng giống tiếng Anh).
     """
-    filtered = _only_letters(ciphertext)
-    if not filtered:
-        return "", ciphertext
+    random.seed()
+    return _break_vigenere_internal(ciphertext, max_key_len=20, top_k=7)
 
-    key_len = _guess_key_length(ciphertext)
-    # Tách cột
-    cols = [''] * key_len
-    for i, c in enumerate(filtered):
-        cols[i % key_len] += c
 
-    # Tìm shift cho từng cột
-    shifts = [_best_shift_for_column(col) for col in cols]
-    key = ''.join(chr(ord('A') + k) for k in shifts)
+# ========================= Utility functions ============================= #
 
-    plaintext = _decrypt_vigenere(ciphertext, key)
-    return key, plaintext
 
+def _reduce_repeating_key(key: str) -> str:
+    """
+    Nếu key là lặp lại của một mẫu ngắn hơn (ví dụ 'SECURITYSECURITY'),
+    trả về mẫu ngắn nhất ('SECURITY').
+    Nếu không phải lặp, trả về key như cũ.
+    """
+    n = len(key)
+    for p in range(1, n + 1):
+        if n % p == 0:
+            pattern = key[:p]
+            if pattern * (n // p) == key:
+                return pattern
+    return key
+
+
+# ============================== 6. CLI mode ============================== #
+
+
+def _run_cli():
+    """
+    Chạy từ command line, đúng format đề:
+        dòng 1: khóa k
+        dòng 2+: plaintext
+    """
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Task 3 - Vigenère cipher breaker (IC + chi-square)"
+    )
+    parser.add_argument("-i", "--input", required=True, help="File ciphertext input")
+    parser.add_argument("-o", "--output", required=True, help="File plaintext output")
+    parser.add_argument(
+        "--max-key",
+        type=int,
+        default=20,
+        help="Độ dài khóa tối đa để thử (mặc định 20)",
+    )
+    parser.add_argument(
+        "--top-k", type=int, default=7, help="Số độ dài khóa ứng viên (mặc định 7)"
+    )
+    args = parser.parse_args()
+
+    with open(args.input, "r", encoding="utf-8", errors="ignore") as f:
+        ciphertext = f.read()
+
+    key, plaintext, score = _break_vigenere_internal(
+        ciphertext,
+        max_key_len=args.max_key,
+        top_k=args.top_k,
+    )
+
+    with open(args.output, "w", encoding="utf-8", errors="ignore") as out:
+        out.write(key + "\n")
+        out.write(plaintext)
+
+    print(f"[+] Best key  : {key}")
+    print(f"[+] Chi-square: {score:.2f}")
+
+
+if __name__ == "__main__":
+    _run_cli()

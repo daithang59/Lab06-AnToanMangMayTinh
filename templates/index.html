@@ -268,7 +268,10 @@
 
                   {% if task3_result %}
                   <hr />
-                  <p><strong>Recovered Key:</strong> {{ task3_key }}</p>
+                  <p class="fw-semibold">
+                    <span class="text-primary">Recovered Key:</span>
+                    <span class="ms-2">{{ task3_key }}</span>
+                  </p>
                   <label class="form-label fw-semibold">Plaintext:</label>
                   <textarea class="form-control" rows="10" readonly>
 {{ task3_result }}</textarea

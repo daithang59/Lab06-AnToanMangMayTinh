@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, flash
 
 # Import các module crypto bạn sẽ tự cài đặt
 from crypto.caesar import break_caesar
@@ -8,7 +8,9 @@ from crypto.des_modes import des_encrypt, des_decrypt
 from crypto.aes_modes import aes_encrypt, aes_decrypt
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = "change-this-secret-key"  # nếu sau này bạn dùng flash, session, v.v.
+app.config["SECRET_KEY"] = (
+    "change-this-secret-key"  # nếu sau này bạn dùng flash, session, v.v.
+)
 
 
 @app.route("/")
@@ -72,18 +74,20 @@ def task2_substitution():
 def task3_vigenere():
     file = request.files.get("cipher_file")
     if not file:
-        return redirect(url_for("index"))
+        flash("Please choose a ciphertext file.")
+        return redirect(url_for("index", active_tab="task3"))
 
     ciphertext = file.read().decode("utf-8", errors="ignore")
 
-    # Gọi hàm crack Vigenère
-    key, plaintext = break_vigenere(ciphertext)
+    # ➜ nhận 3 giá trị
+    key, plaintext, score = break_vigenere(ciphertext)
 
     return render_template(
         "index.html",
         active_tab="task3",
         task3_key=key,
         task3_result=plaintext,
+        task3_score=score,
     )
 
 
@@ -93,8 +97,8 @@ def task3_vigenere():
 @app.route("/task4/des", methods=["POST"])
 def task4_des():
     file = request.files.get("input_file")
-    mode = request.form.get("mode")        # 'ECB' hoặc 'CBC' ...
-    action = request.form.get("action")    # 'encrypt' hoặc 'decrypt'
+    mode = request.form.get("mode")  # 'ECB' hoặc 'CBC' ...
+    action = request.form.get("action")  # 'encrypt' hoặc 'decrypt'
     key_hex = request.form.get("key") or ""
     iv_hex = request.form.get("iv") or ""
 
@@ -154,7 +158,9 @@ def task4_des():
         if action == "encrypt":
             ciphertext, used_iv = des_encrypt(data, key, mode.upper(), iv)
             result_hex = ciphertext.hex()
-            iv_hex_out = used_iv.hex() if used_iv is not None else (iv.hex() if iv else "")
+            iv_hex_out = (
+                used_iv.hex() if used_iv is not None else (iv.hex() if iv else "")
+            )
         else:
             plaintext = des_decrypt(data, key, mode.upper(), iv)
             result_hex = plaintext.hex()
@@ -237,7 +243,9 @@ def task5_aes():
         if action == "encrypt":
             ciphertext, used_iv = aes_encrypt(data, key, mode.upper(), iv)
             result_hex = ciphertext.hex()
-            iv_hex_out = used_iv.hex() if used_iv is not None else (iv.hex() if iv else "")
+            iv_hex_out = (
+                used_iv.hex() if used_iv is not None else (iv.hex() if iv else "")
+            )
         else:
             plaintext = aes_decrypt(data, key, mode.upper(), iv)
             result_hex = plaintext.hex()
