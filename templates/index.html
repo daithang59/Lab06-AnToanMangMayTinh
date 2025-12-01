@@ -146,8 +146,44 @@
                     method="POST"
                     action="{{ url_for('task1_caesar') }}"
                     enctype="multipart/form-data"
+                    id="task1-form"
                   >
-                    <div class="mb-3">
+                    <!-- Input Method Selection -->
+                    <div class="mb-4">
+                      <label class="form-label fw-semibold"
+                        >Phương thức nhập liệu</label
+                      >
+                      <div class="selection-card-group">
+                        <div class="selection-card">
+                          <input
+                            type="radio"
+                            name="input_method"
+                            value="file"
+                            id="task1-input-file"
+                            checked
+                          />
+                          <label for="task1-input-file">
+                            <i class="bi bi-file-earmark-arrow-up"></i>
+                            <span>Upload file</span>
+                          </label>
+                        </div>
+                        <div class="selection-card">
+                          <input
+                            type="radio"
+                            name="input_method"
+                            value="text"
+                            id="task1-input-text"
+                          />
+                          <label for="task1-input-text">
+                            <i class="bi bi-keyboard"></i>
+                            <span>Nhập text trực tiếp</span>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- File Input Section -->
+                    <div class="mb-3" id="task1-file-section">
                       <label class="form-label fw-semibold"
                         >Ciphertext file (.txt)</label
                       >
@@ -155,11 +191,30 @@
                         type="file"
                         name="cipher_file"
                         class="form-control"
-                        required
+                        id="task1-file-input"
                       />
                     </div>
-                    <button type="submit" class="btn btn-primary">
-                      Decrypt
+
+                    <!-- Text Input Section -->
+                    <div
+                      class="mb-3"
+                      id="task1-text-section"
+                      style="display: none"
+                    >
+                      <label class="form-label fw-semibold"
+                        >Nhập ciphertext trực tiếp</label
+                      >
+                      <textarea
+                        name="cipher_text"
+                        class="form-control"
+                        rows="4"
+                        id="task1-text-input"
+                        placeholder="Nhập ciphertext cần giải mã..."
+                      ></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary px-4">
+                      <i class="bi bi-play-circle"></i> Decrypt
                     </button>
                   </form>
 
@@ -197,8 +252,44 @@
                     method="POST"
                     action="{{ url_for('task2_substitution') }}"
                     enctype="multipart/form-data"
+                    id="task2-form"
                   >
-                    <div class="mb-3">
+                    <!-- Input Method Selection -->
+                    <div class="mb-4">
+                      <label class="form-label fw-semibold"
+                        >Phương thức nhập liệu</label
+                      >
+                      <div class="selection-card-group">
+                        <div class="selection-card">
+                          <input
+                            type="radio"
+                            name="input_method"
+                            value="file"
+                            id="task2-input-file"
+                            checked
+                          />
+                          <label for="task2-input-file">
+                            <i class="bi bi-file-earmark-arrow-up"></i>
+                            <span>Upload file</span>
+                          </label>
+                        </div>
+                        <div class="selection-card">
+                          <input
+                            type="radio"
+                            name="input_method"
+                            value="text"
+                            id="task2-input-text"
+                          />
+                          <label for="task2-input-text">
+                            <i class="bi bi-keyboard"></i>
+                            <span>Nhập text trực tiếp</span>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- File Input Section -->
+                    <div class="mb-3" id="task2-file-section">
                       <label class="form-label fw-semibold"
                         >Ciphertext file (.txt)</label
                       >
@@ -206,11 +297,30 @@
                         type="file"
                         name="cipher_file"
                         class="form-control"
-                        required
+                        id="task2-file-input"
                       />
                     </div>
-                    <button type="submit" class="btn btn-primary">
-                      Crack Cipher
+
+                    <!-- Text Input Section -->
+                    <div
+                      class="mb-3"
+                      id="task2-text-section"
+                      style="display: none"
+                    >
+                      <label class="form-label fw-semibold"
+                        >Nhập ciphertext trực tiếp</label
+                      >
+                      <textarea
+                        name="cipher_text"
+                        class="form-control"
+                        rows="4"
+                        id="task2-text-input"
+                        placeholder="Nhập ciphertext cần crack..."
+                      ></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary px-4">
+                      <i class="bi bi-play-circle"></i> Crack Cipher
                     </button>
                   </form>
 
@@ -249,8 +359,44 @@
                     method="POST"
                     action="{{ url_for('task3_vigenere') }}"
                     enctype="multipart/form-data"
+                    id="task3-form"
                   >
-                    <div class="mb-3">
+                    <!-- Input Method Selection -->
+                    <div class="mb-4">
+                      <label class="form-label fw-semibold"
+                        >Phương thức nhập liệu</label
+                      >
+                      <div class="selection-card-group">
+                        <div class="selection-card">
+                          <input
+                            type="radio"
+                            name="input_method"
+                            value="file"
+                            id="task3-input-file"
+                            checked
+                          />
+                          <label for="task3-input-file">
+                            <i class="bi bi-file-earmark-arrow-up"></i>
+                            <span>Upload file</span>
+                          </label>
+                        </div>
+                        <div class="selection-card">
+                          <input
+                            type="radio"
+                            name="input_method"
+                            value="text"
+                            id="task3-input-text"
+                          />
+                          <label for="task3-input-text">
+                            <i class="bi bi-keyboard"></i>
+                            <span>Nhập text trực tiếp</span>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- File Input Section -->
+                    <div class="mb-3" id="task3-file-section">
                       <label class="form-label fw-semibold"
                         >Ciphertext file (.txt)</label
                       >
@@ -258,11 +404,30 @@
                         type="file"
                         name="cipher_file"
                         class="form-control"
-                        required
+                        id="task3-file-input"
                       />
                     </div>
-                    <button type="submit" class="btn btn-primary">
-                      Break Cipher
+
+                    <!-- Text Input Section -->
+                    <div
+                      class="mb-3"
+                      id="task3-text-section"
+                      style="display: none"
+                    >
+                      <label class="form-label fw-semibold"
+                        >Nhập ciphertext trực tiếp</label
+                      >
+                      <textarea
+                        name="cipher_text"
+                        class="form-control"
+                        rows="4"
+                        id="task3-text-input"
+                        placeholder="Nhập Vigenère ciphertext..."
+                      ></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary px-4">
+                      <i class="bi bi-play-circle"></i> Break Cipher
                     </button>
                   </form>
 
@@ -302,24 +467,115 @@
                     method="POST"
                     action="{{ url_for('task4_des') }}"
                     enctype="multipart/form-data"
+                    id="task4-form"
                   >
-                    <div class="mb-3">
+                    <!-- Action Selection -->
+                    <div class="mb-4">
+                      <label class="form-label fw-semibold">Chọn chế độ</label>
+                      <div class="selection-card-group">
+                        <div class="selection-card">
+                          <input
+                            type="radio"
+                            name="action"
+                            value="encrypt"
+                            id="task4-action-encrypt"
+                            checked
+                          />
+                          <label for="task4-action-encrypt">
+                            <i class="bi bi-shield-lock"></i>
+                            <span>Encrypt</span>
+                          </label>
+                        </div>
+                        <div class="selection-card">
+                          <input
+                            type="radio"
+                            name="action"
+                            value="decrypt"
+                            id="task4-action-decrypt"
+                          />
+                          <label for="task4-action-decrypt">
+                            <i class="bi bi-shield-check"></i>
+                            <span>Decrypt</span>
+                          </label>
+                        </div>
+                      </div>
+                      <div class="form-text mt-2" id="task4-action-hint">
+                        Mã hóa dữ liệu bình thường thành hex
+                      </div>
+                    </div>
+
+                    <!-- Input Method Selection -->
+                    <div class="mb-4">
                       <label class="form-label fw-semibold"
-                        >Input file (hex)</label
+                        >Phương thức nhập liệu</label
                       >
+                      <div class="selection-card-group">
+                        <div class="selection-card">
+                          <input
+                            type="radio"
+                            name="input_method"
+                            value="file"
+                            id="task4-input-file"
+                            checked
+                          />
+                          <label for="task4-input-file">
+                            <i class="bi bi-file-earmark-arrow-up"></i>
+                            <span>Upload file</span>
+                          </label>
+                        </div>
+                        <div class="selection-card">
+                          <input
+                            type="radio"
+                            name="input_method"
+                            value="text"
+                            id="task4-input-text"
+                          />
+                          <label for="task4-input-text">
+                            <i class="bi bi-keyboard"></i>
+                            <span>Nhập text trực tiếp</span>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- File Input Section -->
+                    <div class="mb-3" id="task4-file-section">
+                      <label class="form-label fw-semibold">Chọn file</label>
                       <input
                         type="file"
                         name="input_file"
                         class="form-control"
-                        required
+                        id="task4-file-input"
                       />
-                      <div class="form-text">
-                        Nội dung file phải là chuỗi hex (không có prefix 0x).
+                      <div class="form-text" id="task4-file-hint">
+                        File chứa dữ liệu plaintext cần mã hóa
                       </div>
                     </div>
 
+                    <!-- Text Input Section -->
+                    <div
+                      class="mb-3"
+                      id="task4-text-section"
+                      style="display: none"
+                    >
+                      <label class="form-label fw-semibold"
+                        >Nhập dữ liệu trực tiếp</label
+                      >
+                      <textarea
+                        name="plaintext_input"
+                        class="form-control"
+                        rows="4"
+                        id="task4-text-input"
+                        placeholder="Nhập plaintext hoặc hex..."
+                      ></textarea>
+                      <div class="form-text" id="task4-text-hint">
+                        Nhập text bình thường để mã hóa
+                      </div>
+                    </div>
+
+                    <!-- Mode and Key Settings -->
                     <div class="row">
-                      <div class="col-md-4 mb-3">
+                      <div class="col-md-6 mb-3">
                         <label class="form-label fw-semibold">Mode</label>
                         <select class="form-select" name="mode" required>
                           <option value="ECB">ECB</option>
@@ -327,17 +583,9 @@
                         </select>
                       </div>
 
-                      <div class="col-md-4 mb-3">
-                        <label class="form-label fw-semibold">Action</label>
-                        <select class="form-select" name="action" required>
-                          <option value="encrypt">Encrypt</option>
-                          <option value="decrypt">Decrypt</option>
-                        </select>
-                      </div>
-
-                      <div class="col-md-4 mb-3">
+                      <div class="col-md-6 mb-3">
                         <label class="form-label fw-semibold"
-                          >Key (hex, 16 chars)</label
+                          >Key (hex, 16 chars hoặc plaintext 8 chars)</label
                         >
                         <input
                           type="text"
@@ -347,26 +595,30 @@
                           required
                         />
                         <div class="form-text">
-                          8 bytes (16 hex chars) cho DES.
+                          Hex: 16 ký tự | Plaintext: 8 ký tự
                         </div>
                       </div>
                     </div>
 
+                    <!-- IV for CBC -->
                     <div class="mb-3">
                       <label class="form-label fw-semibold"
-                        >IV (hex, 16 chars, optional)</label
+                        >IV (hex, 16 chars - chỉ cho CBC)</label
                       >
                       <input
                         type="text"
                         name="iv"
                         class="form-control"
-                        placeholder="Chỉ dùng cho CBC"
+                        placeholder="Để trống nếu dùng ECB hoặc tự sinh IV"
                       />
-                      <div class="form-text">Bắt buộc nếu decrypt với CBC.</div>
+                      <div class="form-text">
+                        Bắt buộc nếu decrypt với CBC. Encrypt sẽ tự sinh nếu bỏ
+                        trống.
+                      </div>
                     </div>
 
-                    <button type="submit" class="btn btn-primary">
-                      Process
+                    <button type="submit" class="btn btn-primary px-4">
+                      <i class="bi bi-play-circle"></i> Thực hiện
                     </button>
                   </form>
 
@@ -395,29 +647,122 @@
                     Task 5 – AES Encryption/Decryption
                   </h4>
                   <p class="text-muted">
-                    Thực hiện mã hóa/giải mã AES-128 với mode ECB/CBC. Dữ liệu
-                    input & output ở dạng hex.
+                    Thực hiện mã hóa/giải mã AES-128 với mode ECB/CBC.
                   </p>
 
                   <form
+                    id="task5-form"
                     method="POST"
                     action="{{ url_for('task5_aes') }}"
                     enctype="multipart/form-data"
                   >
-                    <div class="mb-3">
+                    <!-- Action Selection -->
+                    <div class="mb-4">
+                      <label class="form-label fw-semibold">Chọn chế độ</label>
+                      <div class="selection-card-group">
+                        <div class="selection-card">
+                          <input
+                            type="radio"
+                            name="action"
+                            value="encrypt"
+                            id="task5-action-encrypt"
+                            checked
+                          />
+                          <label for="task5-action-encrypt">
+                            <i class="bi bi-shield-lock"></i>
+                            <span>Encrypt</span>
+                          </label>
+                        </div>
+                        <div class="selection-card">
+                          <input
+                            type="radio"
+                            name="action"
+                            value="decrypt"
+                            id="task5-action-decrypt"
+                          />
+                          <label for="task5-action-decrypt">
+                            <i class="bi bi-shield-check"></i>
+                            <span>Decrypt</span>
+                          </label>
+                        </div>
+                      </div>
+                      <div class="form-text mt-2" id="task5-action-hint">
+                        Mã hóa dữ liệu bình thường thành hex
+                      </div>
+                    </div>
+
+                    <!-- Input Method Selection -->
+                    <div class="mb-4">
                       <label class="form-label fw-semibold"
-                        >Input file (hex)</label
+                        >Phương thức nhập liệu</label
                       >
+                      <div class="selection-card-group">
+                        <div class="selection-card">
+                          <input
+                            type="radio"
+                            name="input_method"
+                            value="file"
+                            id="task5-input-file"
+                            checked
+                          />
+                          <label for="task5-input-file">
+                            <i class="bi bi-file-earmark-arrow-up"></i>
+                            <span>Upload file</span>
+                          </label>
+                        </div>
+                        <div class="selection-card">
+                          <input
+                            type="radio"
+                            name="input_method"
+                            value="text"
+                            id="task5-input-text"
+                          />
+                          <label for="task5-input-text">
+                            <i class="bi bi-keyboard"></i>
+                            <span>Nhập text trực tiếp</span>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- File Input Section -->
+                    <div class="mb-3" id="task5-file-section">
+                      <label class="form-label fw-semibold">Chọn file</label>
                       <input
                         type="file"
                         name="input_file"
                         class="form-control"
-                        required
+                        id="task5-file-input"
                       />
+                      <div class="form-text" id="task5-file-hint">
+                        File chứa dữ liệu plaintext cần mã hóa
+                      </div>
                     </div>
 
+                    <!-- Text Input Section -->
+                    <div
+                      class="mb-3"
+                      id="task5-text-section"
+                      style="display: none"
+                    >
+                      <label class="form-label fw-semibold"
+                        >Nhập dữ liệu trực tiếp</label
+                      >
+                      <textarea
+                        name="plaintext_input"
+                        class="form-control"
+                        rows="4"
+                        id="task5-text-input"
+                        placeholder="Nhập plaintext hoặc hex..."
+                      ></textarea>
+                      <div class="form-text" id="task5-text-hint">
+                        Nhập text bình thường để mã hóa
+                      </div>
+                    </div>
+
+                    <!-- Mode and Key Settings -->
                     <div class="row">
-                      <div class="col-md-4 mb-3">
+                      <div class="col-md-6 mb-3">
                         <label class="form-label fw-semibold">Mode</label>
                         <select class="form-select" name="mode" required>
                           <option value="ECB">ECB</option>
@@ -425,46 +770,42 @@
                         </select>
                       </div>
 
-                      <div class="col-md-4 mb-3">
-                        <label class="form-label fw-semibold">Action</label>
-                        <select class="form-select" name="action" required>
-                          <option value="encrypt">Encrypt</option>
-                          <option value="decrypt">Decrypt</option>
-                        </select>
-                      </div>
-
-                      <div class="col-md-4 mb-3">
+                      <div class="col-md-6 mb-3">
                         <label class="form-label fw-semibold"
-                          >Key (hex, 32 chars)</label
+                          >Key (hex, 32 chars hoặc plaintext 16 chars)</label
                         >
                         <input
                           type="text"
                           name="key"
                           class="form-control"
-                          placeholder="16 bytes = 32 hex chars"
+                          placeholder="2b7e151628aed2a6abf7158809cf4f3c"
                           required
                         />
                         <div class="form-text">
-                          Ví dụ: 2b7e151628aed2a6abf7158809cf4f3c
+                          Hex: 32 ký tự | Plaintext: 16 ký tự
                         </div>
                       </div>
                     </div>
 
+                    <!-- IV for CBC -->
                     <div class="mb-3">
                       <label class="form-label fw-semibold"
-                        >IV (hex, optional)</label
+                        >IV (hex, 32 chars - chỉ cho CBC)</label
                       >
                       <input
                         type="text"
                         name="iv"
                         class="form-control"
-                        placeholder="Chỉ dùng cho CBC"
+                        placeholder="Để trống nếu dùng ECB hoặc tự sinh IV"
                       />
-                      <div class="form-text">Bắt buộc nếu decrypt với CBC.</div>
+                      <div class="form-text">
+                        Bắt buộc nếu decrypt với CBC. Encrypt sẽ tự sinh nếu bỏ
+                        trống.
+                      </div>
                     </div>
 
-                    <button type="submit" class="btn btn-primary">
-                      Process
+                    <button type="submit" class="btn btn-primary px-4">
+                      <i class="bi bi-play-circle"></i> Thực hiện
                     </button>
                   </form>
 

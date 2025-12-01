@@ -353,3 +353,58 @@ footer {
 .tab-pane.active {
   animation: fadeIn 0.4s ease-out forwards;
 }
+
+/* Selection Cards */
+.selection-card-group {
+  display: flex;
+  gap: 1rem;
+}
+
+.selection-card {
+  position: relative;
+  flex: 1;
+}
+
+.selection-card input[type='radio'] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.selection-card label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background-color: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  color: var(--text-main);
+  height: 100%;
+}
+
+.selection-card label:hover {
+  border-color: var(--primary-color);
+  background-color: var(--nav-hover-bg);
+}
+
+.selection-card input[type='radio']:checked + label {
+  background-color: rgba(37, 99, 235, 0.1);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  box-shadow: 0 0 0 1px var(--primary-color);
+}
+
+[data-theme='dark'] .selection-card input[type='radio']:checked + label {
+  background-color: rgba(37, 99, 235, 0.2);
+}
+
+.selection-card i {
+  font-size: 1.1rem;
+}
+

@@ -27,11 +27,24 @@ def index():
 @app.route("/task1/caesar", methods=["POST"])
 def task1_caesar():
     file = request.files.get("cipher_file")
-    if not file:
-        return redirect(url_for("index"))
+    cipher_text = request.form.get("cipher_text") or ""
 
-    # Đọc ciphertext (UTF-8 text)
-    ciphertext = file.read().decode("utf-8", errors="ignore")
+    # Xử lý input
+    ciphertext = None
+    if cipher_text.strip():
+        # Người dùng nhập vào textarea
+        ciphertext = cipher_text
+    elif file:
+        # Người dùng upload file
+        ciphertext = file.read().decode("utf-8", errors="ignore")
+
+    if not ciphertext:
+        return render_template(
+            "index.html",
+            active_tab="task1",
+            task1_result="ERROR: Vui lòng upload file HOẶC nhập vào textarea.",
+            task1_key="",
+        )
 
     # Gọi hàm giải Caesar
     key, plaintext = break_caesar(ciphertext)
@@ -50,10 +63,25 @@ def task1_caesar():
 @app.route("/task2/substitution", methods=["POST"])
 def task2_substitution():
     file = request.files.get("cipher_file")
-    if not file:
-        return redirect(url_for("index"))
+    cipher_text = request.form.get("cipher_text") or ""
 
-    ciphertext = file.read().decode("utf-8", errors="ignore")
+    # Xử lý input
+    ciphertext = None
+    if cipher_text.strip():
+        # Người dùng nhập vào textarea
+        ciphertext = cipher_text
+    elif file:
+        # Người dùng upload file
+        ciphertext = file.read().decode("utf-8", errors="ignore")
+
+    if not ciphertext:
+        return render_template(
+            "index.html",
+            active_tab="task2",
+            task2_result="ERROR: Vui lòng upload file HOẶC nhập vào textarea.",
+            task2_score="",
+            task2_mapping="",
+        )
 
     # Gọi hàm crack substitution
     score, mapping_str, plaintext = break_substitution(ciphertext)
@@ -73,11 +101,25 @@ def task2_substitution():
 @app.route("/task3/vigenere", methods=["POST"])
 def task3_vigenere():
     file = request.files.get("cipher_file")
-    if not file:
-        flash("Please choose a ciphertext file.")
-        return redirect(url_for("index", active_tab="task3"))
+    cipher_text = request.form.get("cipher_text") or ""
 
-    ciphertext = file.read().decode("utf-8", errors="ignore")
+    # Xử lý input
+    ciphertext = None
+    if cipher_text.strip():
+        # Người dùng nhập vào textarea
+        ciphertext = cipher_text
+    elif file:
+        # Người dùng upload file
+        ciphertext = file.read().decode("utf-8", errors="ignore")
+
+    if not ciphertext:
+        return render_template(
+            "index.html",
+            active_tab="task3",
+            task3_result="ERROR: Vui lòng upload file HOẶC nhập vào textarea.",
+            task3_key="",
+            task3_score="",
+        )
 
     # ➜ nhận 3 giá trị
     key, plaintext, score = break_vigenere(ciphertext)
@@ -97,51 +139,109 @@ def task3_vigenere():
 @app.route("/task4/des", methods=["POST"])
 def task4_des():
     file = request.files.get("input_file")
+    plaintext_input = request.form.get("plaintext_input") or ""
     mode = request.form.get("mode")  # 'ECB' hoặc 'CBC' ...
     action = request.form.get("action")  # 'encrypt' hoặc 'decrypt'
     key_hex = request.form.get("key") or ""
     iv_hex = request.form.get("iv") or ""
 
-    if not file or not mode or not action or not key_hex:
+    if not mode or not action or not key_hex:
         return redirect(url_for("index"))
 
-    # Đọc dữ liệu hex từ file
-    hex_text = file.read().decode("utf-8", errors="ignore")
-    hex_text = "".join(hex_text.split())  # bỏ whitespace/newline
-    try:
-        data = bytes.fromhex(hex_text)
-    except ValueError:
-        # Nếu hex không hợp lệ, trả về giao diện với thông báo đơn giản
+    # Xử lý input
+    data = None
+    if plaintext_input.strip():
+        # Người dùng nhập vào textarea
+        # Nếu là decrypt → coi như hex, nếu encrypt → coi như plaintext
+        if action == "decrypt":
+            # Decrypt: input phải là hex
+            hex_text = "".join(plaintext_input.split())
+            try:
+                data = bytes.fromhex(hex_text)
+            except ValueError:
+                return render_template(
+                    "index.html",
+                    active_tab="task4",
+                    task4_result="ERROR: Khi decrypt, input phải là hex. Paste ciphertext hex vào ô textarea.",
+                    task4_iv="",
+                )
+        else:
+            # Encrypt: input là plaintext
+            data = plaintext_input.encode("utf-8")
+    elif file and file.filename:
+        # Đọc file content
+        file_content = file.read().decode("utf-8", errors="ignore")
+
+        if action == "decrypt":
+            # Decrypt: file phải chứa hex
+            hex_text = "".join(file_content.split())
+            try:
+                data = bytes.fromhex(hex_text)
+            except ValueError:
+                return render_template(
+                    "index.html",
+                    active_tab="task4",
+                    task4_result="ERROR: Khi decrypt, file phải chứa chuỗi hex hợp lệ.",
+                    task4_iv="",
+                )
+        else:
+            # Encrypt: file chứa plaintext
+            data = file_content.encode("utf-8")
+
+    if data is None:
         return render_template(
             "index.html",
             active_tab="task4",
-            task4_result="ERROR: Invalid hex in input file.",
+            task4_result="ERROR: Phải upload file hex HOẶC nhập vào textarea.",
             task4_iv="",
-        )
-
-    # Key
+        )  # Key - chấp nhận cả hex và plaintext
     key_hex = "".join(key_hex.split())
+
+    # Thử parse hex trước
     try:
-        key = bytes.fromhex(key_hex)
-    except ValueError:
+        if len(key_hex) == 16 and all(c in "0123456789ABCDEFabcdef" for c in key_hex):
+            key = bytes.fromhex(key_hex)
+        else:
+            # Không phải hex, coi như plaintext
+            key = key_hex.encode("utf-8")
+            if len(key) != 8:
+                return render_template(
+                    "index.html",
+                    active_tab="task4",
+                    task4_result=f"ERROR: Key phải là 8 bytes. Bạn nhập '{key_hex}' = {len(key)} bytes. Hoặc nhập 16 ký tự hex (0-9, A-F).",
+                    task4_iv="",
+                )
+    except Exception as e:
         return render_template(
             "index.html",
             active_tab="task4",
-            task4_result="ERROR: Invalid hex in key.",
+            task4_result=f"ERROR: Key không hợp lệ: {e}",
             task4_iv="",
         )
 
-    # IV (nếu có)
+    # IV (nếu có) - chấp nhận cả hex và plaintext
     iv = None
     if iv_hex.strip():
         iv_hex_clean = "".join(iv_hex.split())
         try:
-            iv = bytes.fromhex(iv_hex_clean)
-        except ValueError:
+            if len(iv_hex_clean) == 16 and all(
+                c in "0123456789ABCDEFabcdef" for c in iv_hex_clean
+            ):
+                iv = bytes.fromhex(iv_hex_clean)
+            else:
+                iv = iv_hex_clean.encode("utf-8")
+                if len(iv) != 8:
+                    return render_template(
+                        "index.html",
+                        active_tab="task4",
+                        task4_result=f"ERROR: IV phải là 8 bytes. Bạn nhập '{iv_hex_clean}' = {len(iv)} bytes.",
+                        task4_iv="",
+                    )
+        except Exception as e:
             return render_template(
                 "index.html",
                 active_tab="task4",
-                task4_result="ERROR: Invalid hex in IV.",
+                task4_result=f"ERROR: IV không hợp lệ: {e}",
                 task4_iv="",
             )
 
@@ -157,22 +257,34 @@ def task4_des():
     try:
         if action == "encrypt":
             ciphertext, used_iv = des_encrypt(data, key, mode.upper(), iv)
-            result_hex = ciphertext.hex()
+            result_output = ciphertext.hex()
             iv_hex_out = (
                 used_iv.hex() if used_iv is not None else (iv.hex() if iv else "")
             )
         else:
             plaintext = des_decrypt(data, key, mode.upper(), iv)
-            result_hex = plaintext.hex()
+            # Trả về plaintext dạng text (UTF-8) thay vì hex
+            try:
+                result_output = plaintext.decode("utf-8")
+            except UnicodeDecodeError:
+                # Nếu không decode được, trả về hex
+                result_output = f"[Binary data - hex]: {plaintext.hex()}"
             iv_hex_out = iv.hex() if iv else ""
+    except ValueError as e:
+        error_str = str(e)
+        if "padding" in error_str.lower():
+            result_output = f"ERROR: {e}\n\nGợi ý: Key hoặc IV có thể không đúng. Lưu ý: Ngay cả khi key sai, đôi khi vẫn decrypt được nhưng kết quả sẽ là dữ liệu vô nghĩa."
+        else:
+            result_output = f"ERROR: {e}"
+        iv_hex_out = ""
     except Exception as e:
-        result_hex = f"ERROR during DES {action}: {e}"
+        result_output = f"ERROR during DES {action}: {e}"
         iv_hex_out = ""
 
     return render_template(
         "index.html",
         active_tab="task4",
-        task4_result=result_hex,
+        task4_result=result_output,
         task4_iv=iv_hex_out,
     )
 
@@ -183,36 +295,76 @@ def task4_des():
 @app.route("/task5/aes", methods=["POST"])
 def task5_aes():
     file = request.files.get("input_file")
+    plaintext_input = request.form.get("plaintext_input") or ""
     mode = request.form.get("mode")
     action = request.form.get("action")
     key_hex = request.form.get("key") or ""
     iv_hex = request.form.get("iv") or ""
 
-    if not file or not mode or not action or not key_hex:
+    if not mode or not action or not key_hex:
         return redirect(url_for("index"))
 
-    # Đọc dữ liệu hex từ file
-    hex_text = file.read().decode("utf-8", errors="ignore")
-    hex_text = "".join(hex_text.split())
-    try:
-        data = bytes.fromhex(hex_text)
-    except ValueError:
+    # Xử lý input
+    data = None
+    if plaintext_input.strip():
+        if action == "decrypt":
+            # Decrypt: input phải là hex
+            hex_text = "".join(plaintext_input.split())
+            try:
+                data = bytes.fromhex(hex_text)
+            except ValueError:
+                return render_template(
+                    "index.html",
+                    active_tab="task5",
+                    task5_result="ERROR: Khi decrypt, input phải là hex. Paste ciphertext hex vào ô textarea.",
+                    task5_iv="",
+                )
+        else:
+            # Encrypt: input là plaintext
+            data = plaintext_input.encode("utf-8")
+    elif file and file.filename:
+        file_content = file.read().decode("utf-8", errors="ignore")
+
+        if action == "decrypt":
+            # Decrypt: file phải chứa hex
+            hex_text = "".join(file_content.split())
+            try:
+                data = bytes.fromhex(hex_text)
+            except ValueError:
+                return render_template(
+                    "index.html",
+                    active_tab="task5",
+                    task5_result="ERROR: Khi decrypt, file phải chứa chuỗi hex hợp lệ.",
+                    task5_iv="",
+                )
+        else:
+            # Encrypt: file chứa plaintext
+            data = file_content.encode("utf-8")
+
+    if data is None:
         return render_template(
             "index.html",
             active_tab="task5",
-            task5_result="ERROR: Invalid hex in input file.",
+            task5_result="ERROR: Phải upload file hex HOẶC nhập vào textarea.",
             task5_iv="",
         )
 
     # Key
     key_hex = "".join(key_hex.split())
+    if len(key_hex) != 32:
+        return render_template(
+            "index.html",
+            active_tab="task5",
+            task5_result=f"ERROR: AES-128 key phải là 32 ký tự hex (16 bytes). Bạn đang nhập {len(key_hex)} ký tự.",
+            task5_iv="",
+        )
     try:
         key = bytes.fromhex(key_hex)
     except ValueError:
         return render_template(
             "index.html",
             active_tab="task5",
-            task5_result="ERROR: Invalid hex in key.",
+            task5_result=f"ERROR: Key không hợp lệ. Chỉ chấp nhận ký tự hex (0-9, A-F). Bạn nhập: '{key_hex}'",
             task5_iv="",
         )
 
@@ -242,22 +394,33 @@ def task5_aes():
     try:
         if action == "encrypt":
             ciphertext, used_iv = aes_encrypt(data, key, mode.upper(), iv)
-            result_hex = ciphertext.hex()
+            result_output = ciphertext.hex()
             iv_hex_out = (
                 used_iv.hex() if used_iv is not None else (iv.hex() if iv else "")
             )
         else:
             plaintext = aes_decrypt(data, key, mode.upper(), iv)
-            result_hex = plaintext.hex()
+            # Trả về plaintext dạng text (UTF-8) thay vì hex
+            try:
+                result_output = plaintext.decode("utf-8")
+            except UnicodeDecodeError:
+                result_output = f"[Binary data - hex]: {plaintext.hex()}"
             iv_hex_out = iv.hex() if iv else ""
+    except ValueError as e:
+        error_str = str(e)
+        if "padding" in error_str.lower():
+            result_output = f"ERROR: {e}\n\nGợi ý: Key hoặc IV có thể không đúng. Lưu ý: Ngay cả khi key sai, đôi khi vẫn decrypt được nhưng kết quả sẽ là dữ liệu vô nghĩa."
+        else:
+            result_output = f"ERROR: {e}"
+        iv_hex_out = ""
     except Exception as e:
-        result_hex = f"ERROR during AES {action}: {e}"
+        result_output = f"ERROR during AES {action}: {e}"
         iv_hex_out = ""
 
     return render_template(
         "index.html",
         active_tab="task5",
-        task5_result=result_hex,
+        task5_result=result_output,
         task5_iv=iv_hex_out,
     )
 

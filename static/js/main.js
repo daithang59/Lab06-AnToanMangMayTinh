@@ -121,4 +121,148 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("textarea.form-control").forEach((ta) => {
     ta.addEventListener("input", autoResizeTextareas);
   });
+
+  // All tasks: Dynamic form behavior
+  setupTaskForms();
 });
+
+function setupTaskForms() {
+  // Task 1, 2, 3 (simple file/text toggle)
+  setupSimpleTaskForm("task1");
+  setupSimpleTaskForm("task2");
+  setupSimpleTaskForm("task3");
+
+  // Task 4 & 5 (with encrypt/decrypt mode)
+  setupTaskForm("task4");
+  setupTaskForm("task5");
+}
+
+function setupSimpleTaskForm(taskId) {
+  const form = document.getElementById(`${taskId}-form`);
+  if (!form) return;
+
+  const fileInputRadio = document.getElementById(`${taskId}-input-file`);
+  const textInputRadio = document.getElementById(`${taskId}-input-text`);
+  const fileSection = document.getElementById(`${taskId}-file-section`);
+  const textSection = document.getElementById(`${taskId}-text-section`);
+  const fileInput = document.getElementById(`${taskId}-file-input`);
+  const textarea = document.getElementById(`${taskId}-text-input`);
+
+  // Toggle file/text input sections
+  function updateInputMethod() {
+    const useFile = fileInputRadio && fileInputRadio.checked;
+    if (fileSection) fileSection.style.display = useFile ? "" : "none";
+    if (textSection) textSection.style.display = useFile ? "none" : "";
+
+    // Clear the inactive input
+    if (useFile && textarea) {
+      textarea.value = "";
+    } else if (!useFile && fileInput) {
+      fileInput.value = "";
+    }
+  }
+
+  // Event listeners
+  if (fileInputRadio)
+    fileInputRadio.addEventListener("change", updateInputMethod);
+  if (textInputRadio)
+    textInputRadio.addEventListener("change", updateInputMethod);
+
+  // Initial state
+  updateInputMethod();
+}
+
+function setupTaskForm(taskId) {
+  const form = document.getElementById(`${taskId}-form`);
+  if (!form) return;
+
+  const encryptRadio = document.getElementById(`${taskId}-action-encrypt`);
+  const decryptRadio = document.getElementById(`${taskId}-action-decrypt`);
+  const fileInputRadio = document.getElementById(`${taskId}-input-file`);
+  const textInputRadio = document.getElementById(`${taskId}-input-text`);
+  const fileSection = document.getElementById(`${taskId}-file-section`);
+  const textSection = document.getElementById(`${taskId}-text-section`);
+  const fileInput = document.getElementById(`${taskId}-file-input`);
+  const textarea = document.getElementById(`${taskId}-text-input`);
+
+  // Hints
+  const actionHint = document.getElementById(`${taskId}-action-hint`);
+  const fileHint = document.getElementById(`${taskId}-file-hint`);
+  const textHint = document.getElementById(`${taskId}-text-hint`);
+
+  // Update action hints (encrypt/decrypt)
+  function updateActionHints() {
+    const isEncrypt = encryptRadio && encryptRadio.checked;
+
+    if (actionHint) {
+      actionHint.textContent = isEncrypt
+        ? "Mã hóa dữ liệu bình thường thành hex"
+        : "Giải mã chuỗi hex thành dữ liệu gốc";
+    }
+
+    if (fileHint) {
+      fileHint.textContent = isEncrypt
+        ? "File chứa dữ liệu plaintext cần mã hóa"
+        : "File chứa ciphertext hex cần giải mã";
+    }
+
+    if (textHint) {
+      textHint.textContent = isEncrypt
+        ? "Nhập text bình thường để mã hóa"
+        : "Paste chuỗi hex để giải mã";
+    }
+
+    if (textarea) {
+      textarea.placeholder = isEncrypt
+        ? "Nhập plaintext..."
+        : "Paste hex ciphertext...";
+    }
+  }
+
+  // Toggle file/text input sections
+  function updateInputMethod() {
+    const useFile = fileInputRadio && fileInputRadio.checked;
+    if (fileSection) fileSection.style.display = useFile ? "" : "none";
+    if (textSection) textSection.style.display = useFile ? "none" : "";
+
+    // Clear the inactive input
+    if (useFile && textarea) {
+      textarea.value = "";
+    } else if (!useFile && fileInput) {
+      fileInput.value = "";
+    }
+  }
+
+  // Event listeners
+  if (encryptRadio) encryptRadio.addEventListener("change", updateActionHints);
+  if (decryptRadio) decryptRadio.addEventListener("change", updateActionHints);
+  if (fileInputRadio)
+    fileInputRadio.addEventListener("change", updateInputMethod);
+  if (textInputRadio)
+    textInputRadio.addEventListener("change", updateInputMethod);
+
+  // Initial state
+  updateActionHints();
+  updateInputMethod();
+
+  // Auto-scroll to result after page load (if result exists)
+  setupAutoScroll(taskId);
+}
+
+function setupAutoScroll(taskId) {
+  // Check if there's a result on page load
+  window.addEventListener("load", () => {
+    const tabPane = document.getElementById(taskId);
+    if (!tabPane) return;
+
+    // Check if this tab is active and has results
+    if (tabPane.classList.contains("show", "active")) {
+      const hrElement = tabPane.querySelector("hr");
+      if (hrElement) {
+        setTimeout(() => {
+          hrElement.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 300);
+      }
+    }
+  });
+}

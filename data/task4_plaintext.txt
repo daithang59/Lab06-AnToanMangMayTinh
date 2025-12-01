@@ -1,0 +1,3 @@
+This is a sample plaintext for DES mode testing.
+We will encrypt this text using DES in CBC mode with a fixed key and IV,
+so that the ciphertext is reproducible for the lab.
