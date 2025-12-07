@@ -194,54 +194,49 @@ def task4_des():
             active_tab="task4",
             task4_result="ERROR: Phải upload file hex HOẶC nhập vào textarea.",
             task4_iv="",
-        )  # Key - chấp nhận cả hex và plaintext
+        )
+
+    # Key - chỉ chấp nhận hex
     key_hex = "".join(key_hex.split())
 
-    # Thử parse hex trước
-    try:
-        if len(key_hex) == 16 and all(c in "0123456789ABCDEFabcdef" for c in key_hex):
-            key = bytes.fromhex(key_hex)
-        else:
-            # Không phải hex, coi như plaintext
-            key = key_hex.encode("utf-8")
-            if len(key) != 8:
-                return render_template(
-                    "index.html",
-                    active_tab="task4",
-                    task4_result=f"ERROR: Key phải là 8 bytes. Bạn nhập '{key_hex}' = {len(key)} bytes. Hoặc nhập 16 ký tự hex (0-9, A-F).",
-                    task4_iv="",
-                )
-    except Exception as e:
+    if len(key_hex) != 16:
         return render_template(
             "index.html",
             active_tab="task4",
-            task4_result=f"ERROR: Key không hợp lệ: {e}",
+            task4_result=f"ERROR: DES key phải là 16 ký tự hex (8 bytes). Bạn đang nhập {len(key_hex)} ký tự.",
             task4_iv="",
         )
 
-    # IV (nếu có) - chấp nhận cả hex và plaintext
+    try:
+        key = bytes.fromhex(key_hex)
+    except ValueError:
+        return render_template(
+            "index.html",
+            active_tab="task4",
+            task4_result=f"ERROR: Key không hợp lệ. Chỉ chấp nhận ký tự hex (0-9, A-F). Bạn nhập: '{key_hex}'",
+            task4_iv="",
+        )
+
+    # IV (nếu có) - chỉ chấp nhận hex
     iv = None
     if iv_hex.strip():
         iv_hex_clean = "".join(iv_hex.split())
-        try:
-            if len(iv_hex_clean) == 16 and all(
-                c in "0123456789ABCDEFabcdef" for c in iv_hex_clean
-            ):
-                iv = bytes.fromhex(iv_hex_clean)
-            else:
-                iv = iv_hex_clean.encode("utf-8")
-                if len(iv) != 8:
-                    return render_template(
-                        "index.html",
-                        active_tab="task4",
-                        task4_result=f"ERROR: IV phải là 8 bytes. Bạn nhập '{iv_hex_clean}' = {len(iv)} bytes.",
-                        task4_iv="",
-                    )
-        except Exception as e:
+
+        if len(iv_hex_clean) != 16:
             return render_template(
                 "index.html",
                 active_tab="task4",
-                task4_result=f"ERROR: IV không hợp lệ: {e}",
+                task4_result=f"ERROR: DES IV phải là 16 ký tự hex (8 bytes). Bạn đang nhập {len(iv_hex_clean)} ký tự.",
+                task4_iv="",
+            )
+
+        try:
+            iv = bytes.fromhex(iv_hex_clean)
+        except ValueError:
+            return render_template(
+                "index.html",
+                active_tab="task4",
+                task4_result=f"ERROR: IV không hợp lệ. Chỉ chấp nhận ký tự hex (0-9, A-F).",
                 task4_iv="",
             )
 

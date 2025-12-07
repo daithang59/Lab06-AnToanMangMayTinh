@@ -297,6 +297,37 @@ footer {
   color: var(--text-muted);
 }
 
+/* GitHub Link Button */
+.github-link {
+  position: fixed;
+  top: 5rem;
+  right: 1.5rem;
+  z-index: 1000;
+  background: var(--card-bg);
+  border: var(--glass-border);
+  color: var(--text-main);
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.github-link:hover {
+  transform: scale(1.1);
+  box-shadow: var(--shadow-md);
+  color: var(--primary-color);
+}
+
+.github-link i {
+  font-size: 1.5rem;
+}
+
 /* Theme Toggle Button */
 .theme-toggle {
   position: fixed;
@@ -365,7 +396,7 @@ footer {
   flex: 1;
 }
 
-.selection-card input[type='radio'] {
+.selection-card input[type="radio"] {
   position: absolute;
   opacity: 0;
   width: 0;
@@ -393,18 +424,17 @@ footer {
   background-color: var(--nav-hover-bg);
 }
 
-.selection-card input[type='radio']:checked + label {
+.selection-card input[type="radio"]:checked + label {
   background-color: rgba(37, 99, 235, 0.1);
   border-color: var(--primary-color);
   color: var(--primary-color);
   box-shadow: 0 0 0 1px var(--primary-color);
 }
 
-[data-theme='dark'] .selection-card input[type='radio']:checked + label {
+[data-theme="dark"] .selection-card input[type="radio"]:checked + label {
   background-color: rgba(37, 99, 235, 0.2);
 }
 
 .selection-card i {
   font-size: 1.1rem;
 }
-

@@ -1,5 +1,69 @@
 // static/js/main.js
 
+// Copy to clipboard function
+function copyToClipboard(elementId) {
+  const element = document.getElementById(elementId);
+  if (!element) return;
+
+  const text = element.value || element.textContent;
+
+  // Use modern Clipboard API
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        showCopyFeedback(elementId);
+      })
+      .catch((err) => {
+        console.error("Failed to copy:", err);
+        fallbackCopy(text, elementId);
+      });
+  } else {
+    // Fallback for older browsers
+    fallbackCopy(text, elementId);
+  }
+}
+
+function fallbackCopy(text, elementId) {
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.select();
+
+  try {
+    document.execCommand("copy");
+    showCopyFeedback(elementId);
+  } catch (err) {
+    console.error("Fallback copy failed:", err);
+  }
+
+  document.body.removeChild(textarea);
+}
+
+function showCopyFeedback(elementId) {
+  // Find the copy button for this element
+  const element = document.getElementById(elementId);
+  if (!element) return;
+
+  const copyButton = element.parentElement.parentElement.querySelector(
+    'button[onclick*="' + elementId + '"]'
+  );
+  if (!copyButton) return;
+
+  const originalHTML = copyButton.innerHTML;
+  copyButton.innerHTML = '<i class="bi bi-check"></i> Copied!';
+  copyButton.classList.remove("btn-outline-primary");
+  copyButton.classList.add("btn-success");
+
+  setTimeout(() => {
+    copyButton.innerHTML = originalHTML;
+    copyButton.classList.remove("btn-success");
+    copyButton.classList.add("btn-outline-primary");
+  }, 2000);
+}
+
 // Helper: auto resize textarea height to fit content
 function autoResizeTextareas() {
   document.querySelectorAll("textarea.form-control").forEach((ta) => {
