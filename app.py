@@ -1,6 +1,12 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from werkzeug.utils import secure_filename
 import os
+from dotenv import load_dotenv
+import requests
+import time
+
+# Load environment variables
+load_dotenv()
 
 # Import các module crypto bạn sẽ tự cài đặt
 from crypto.caesar import break_caesar
@@ -9,6 +15,9 @@ from crypto.vigenere import break_vigenere
 from crypto.des_modes import des_encrypt, des_decrypt
 from crypto.aes_modes import aes_encrypt, aes_decrypt
 from crypto.charset_filter import validate_and_filter
+
+# Configure Gemini API
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = (
@@ -574,6 +583,162 @@ def api_task3_vigenere():
         )
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
+
+
+# ====================
+# CHATBOT - HYBRID (Offline Knowledge + Online AI)
+# ====================
+from crypto.chatbot_knowledge import get_response as get_offline_response
+
+
+@app.route("/api/chatbot", methods=["POST"])
+def chatbot():
+    """
+    Chatbot endpoint - Hybrid approach:
+    1. Try offline knowledge base first (instant, always works)
+    2. Fallback to Gemini AI if available
+    """
+    try:
+        data = request.get_json()
+        user_message = data.get("message", "").strip()
+
+        if not user_message:
+            return jsonify({"success": False, "error": "Message is required"}), 400
+
+        # STEP 1: Try offline knowledge base first
+        offline_response = get_offline_response(user_message)
+
+        # If offline has confident answer (not the fallback "🤔" message), use it immediately
+        if offline_response and not offline_response.startswith("🤔"):
+            return jsonify(
+                {
+                    "success": True,
+                    "response": offline_response
+                    + "\n\n_💡 Powered by Offline Knowledge Base_",
+                }
+            )
+
+        # STEP 2: Offline doesn't have answer, try Gemini API if available
+        if not GEMINI_API_KEY:
+            # No API key, return offline fallback
+            return jsonify(
+                {
+                    "success": True,
+                    "response": offline_response
+                    + "\n\n_⚠️ Chế độ Offline - API key chưa cấu hình_",
+                }
+            )
+
+        # Try Gemini API for complex questions
+
+        # System prompt for cryptography assistant - TIẾNG VIỆT
+        system_prompt = """Bạn là trợ lý mật mã học thông minh cho dự án Lab06 - Thuật Toán Mã Hóa. 
+Nhiệm vụ của bạn là giúp người dùng hiểu về:
+- Mã cổ điển (Caesar, Substitution, Vigenère)
+- Thuật toán mã hóa hiện đại (DES, AES)
+- Kỹ thuật phân tích mật mã (cryptanalysis)
+- Các chế độ block cipher (ECB, CBC, CTR)
+- Best practices trong mật mã học
+
+TRẢ LỜI BẰNG TIẾNG VIỆT. Giải thích rõ ràng, súc tích, mang tính giáo dục. Dùng ví dụ khi cần thiết.
+Nếu hỏi về implementation, hãy đề cập đến các thuật toán cụ thể trong project này.
+Dùng emoji phù hợp để làm câu trả lời sinh động hơn."""
+
+        # Call Gemini REST API with retry logic
+        # Try different models (all are available in v1beta)
+        models = ["gemini-flash-latest", "gemini-2.5-flash", "gemini-2.0-flash-exp"]
+
+        headers = {"Content-Type": "application/json"}
+
+        payload = {
+            "contents": [
+                {"parts": [{"text": f"{system_prompt}\n\nUser: {user_message}"}]},
+            ],
+            "generationConfig": {
+                "temperature": 0.7,
+                "maxOutputTokens": 2048,  # Increased for longer responses
+                "topP": 0.9,
+                "topK": 40,
+            },
+        }
+
+        # Retry logic for rate limiting
+        max_retries = 2
+        retry_delay = 2  # seconds
+
+        last_error = None
+
+        # Try different models
+        for model in models:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={GEMINI_API_KEY}"
+
+            for attempt in range(max_retries):
+                try:
+                    response = requests.post(
+                        url, headers=headers, json=payload, timeout=30
+                    )
+
+                    # If rate limited, try next model
+                    if response.status_code == 429:
+                        last_error = f"Rate limit: {model}"
+                        break  # Try next model
+
+                    # If model not found, try next
+                    if response.status_code == 404:
+                        last_error = f"Model not available: {model}"
+                        break
+
+                    response.raise_for_status()
+                    result = response.json()
+
+                    # Extract text from response
+                    if "candidates" in result and len(result["candidates"]) > 0:
+                        candidate = result["candidates"][0]
+                        if "content" in candidate and "parts" in candidate["content"]:
+                            text = candidate["content"]["parts"][0].get("text", "")
+                            return jsonify(
+                                {
+                                    "success": True,
+                                    "response": text
+                                    + "\n\n_🤖 Powered by Google Gemini AI_",
+                                }
+                            )
+
+                    last_error = "No valid response"
+                    break
+
+                except requests.exceptions.Timeout:
+                    if attempt < max_retries - 1:
+                        time.sleep(retry_delay)
+                        continue
+                    last_error = "Timeout"
+                    break
+                except requests.exceptions.RequestException as e:
+                    last_error = str(e)
+                    break
+
+        # All models failed - fallback to offline
+        return jsonify(
+            {
+                "success": True,
+                "response": offline_response
+                + f"\n\n_⚠️ Gemini API không khả dụng (Lỗi: {last_error}).\n"
+                + "Sử dụng chế độ Offline Knowledge Base._",
+            }
+        )
+
+    except Exception as e:
+        # Ultimate fallback - always return offline response
+        try:
+            offline_resp = get_offline_response(user_message)
+            return jsonify(
+                {
+                    "success": True,
+                    "response": offline_resp + f"\n\n_⚠️ Lỗi hệ thống: {str(e)}_",
+                }
+            )
+        except:
+            return jsonify({"success": False, "error": f"System error: {str(e)}"}), 500
 
 
 if __name__ == "__main__":

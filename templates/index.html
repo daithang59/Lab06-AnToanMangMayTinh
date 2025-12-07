@@ -37,6 +37,10 @@
       href="{{ url_for('static', filename='css/style.css') }}"
       rel="stylesheet"
     />
+    <link
+      href="{{ url_for('static', filename='css/chatbot.css') }}"
+      rel="stylesheet"
+    />
     <!-- Force file button hover fix -->
     <style>
       input[type="file"]::file-selector-button:hover,
@@ -1137,6 +1141,7 @@
 
     <!-- Custom JS -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/chatbot.js') }}"></script>
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   </body>

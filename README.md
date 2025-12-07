@@ -110,6 +110,27 @@ Lab06 là một ứng dụng web toàn diện cho phép người dùng:
 - ✅ **Real-time Validation** với error messages rõ ràng
 - ✅ **Glass Morphism UI** với animations mượt mà
 - ✅ **GitHub Integration** - link trực tiếp đến repository
+- ✅ **UIT Logo** - Clickable logo link đến website UIT
+
+### 🤖 AI Chatbot Assistant
+
+- ✅ **Hybrid Intelligence** - Kết hợp Offline KB + Online AI
+- ✅ **Offline Knowledge Base** - Instant responses (0ms) cho các câu hỏi phổ biến
+- ✅ **Google Gemini Integration** - AI responses cho câu hỏi phức tạp
+- ✅ **Smart Fallback** - Luôn có câu trả lời, không bao giờ fail
+- ✅ **Priority Logic**:
+  1. Offline Knowledge Base (nếu có câu trả lời chắc chắn)
+  2. Gemini API (nếu câu hỏi phức tạp và có API key)
+  3. Offline fallback (nếu API không khả dụng)
+- ✅ **Knowledge Coverage**:
+  - Caesar Cipher (algorithm, breaking methods, chi-square)
+  - Substitution (quadgram statistics, hill-climbing)
+  - Vigenère (IC analysis, frequency attack)
+  - DES (Feistel network, 56-bit security)
+  - AES (SPN structure, 128/192/256-bit)
+  - Block cipher modes (ECB, CBC, CTR)
+- ✅ **Bilingual** - Hỗ trợ tiếng Việt và tiếng Anh
+- ✅ **Markdown Formatting** - Code blocks, bold, lists
 
 ## 🎬 Demo & Screenshots
 
@@ -248,8 +269,31 @@ pip install -r requirements.txt
 - `Flask==3.0.0` - Web framework
 - `Flask-Cors==4.0.0` - Cross-Origin Resource Sharing
 - `pycryptodome==3.20.0` - Hỗ trợ tiện ích crypto (không dùng cho thuật toán chính)
+- `python-dotenv==1.0.0` - Environment variables management
+- `requests==2.32.5` - HTTP library cho AI chatbot
 
-#### 4️⃣ Chạy Ứng Dụng
+#### 4️⃣ Cấu Hình AI Chatbot (Tùy chọn)
+
+Chatbot hoạt động **100% offline** mặc định. Để kích hoạt Gemini AI cho câu hỏi phức tạp:
+
+```bash
+# Copy file .env.example
+cp .env.example .env
+
+# Chỉnh sửa .env và thêm API key
+GEMINI_API_KEY=your_api_key_here
+```
+
+**Lấy API key miễn phí:**
+
+1. Truy cập: https://aistudio.google.com/app/apikey
+2. Đăng nhập Google account
+3. Tạo API key mới
+4. Copy và paste vào file `.env`
+
+**Lưu ý:** Gemini free tier có giới hạn 15 requests/phút, 1500 requests/ngày.
+
+#### 5️⃣ Chạy Ứng Dụng
 
 ```bash
 python app.py
@@ -439,6 +483,80 @@ Plaintext: "Long message can be any length!"
 - ✅ **Không dùng lại IV** cho cùng một key
 - ✅ Dùng **AES-256** cho bảo mật cao nhất
 
+### 🤖 Sử dụng AI Chatbot
+
+#### Truy cập Chatbot
+
+1. Click vào **icon chatbot** góc dưới bên phải màn hình
+2. Cửa sổ chat sẽ mở ra với giao diện glass morphism
+3. Gõ câu hỏi của bạn và nhấn Enter hoặc click Send
+
+#### Các câu hỏi mẫu
+
+**Về thuật toán:**
+
+```
+- Caesar cipher là gì?
+- Giải thích thuật toán Vigenère
+- So sánh DES và AES
+- Quadgram statistics hoạt động thế nào?
+```
+
+**Về cryptanalysis:**
+
+```
+- Cách phá Caesar cipher?
+- Index of Coincidence là gì?
+- Hill climbing trong substitution
+- Tại sao ECB mode không an toàn?
+```
+
+**Về implementation:**
+
+```
+- File nào chứa code AES?
+- Cách tính chi-square score?
+- Project structure như thế nào?
+```
+
+**Tổng quát:**
+
+```
+- help
+- features
+- giới thiệu project
+```
+
+#### Chế độ hoạt động
+
+**🟢 Offline Mode (Mặc định)**
+
+- Instant responses (0ms latency)
+- Không cần internet/API key
+- Coverage: 90% câu hỏi phổ biến
+- Hiển thị: "_💡 Powered by Offline Knowledge Base_"
+
+**🔵 Hybrid Mode (Với API key)**
+
+- Ưu tiên offline knowledge
+- Fallback sang Gemini cho câu hỏi phức tạp
+- Hiển thị: "_🤖 Powered by Google Gemini AI_"
+
+**🟡 Fallback Mode (API fail)**
+
+- Tự động chuyển về offline
+- Luôn có câu trả lời
+- Hiển thị: "_⚠️ Gemini API không khả dụng_"
+
+#### Tips sử dụng Chatbot
+
+- ✅ Hỏi bằng **tiếng Việt** hoặc **tiếng Anh**
+- ✅ Câu hỏi ngắn gọn, cụ thể
+- ✅ Dùng "help" để xem hướng dẫn
+- ✅ Chatbot hiểu context về Lab06
+- ❌ Không hỏi về code không liên quan
+- ❌ Không hỏi về crypto không có trong project
+
 ## 📁 Cấu Trúc Thư Mục
 
 ```
@@ -457,16 +575,25 @@ Lab06-AnToanMangMayTinh/
 │   ├── des_core.py             # DES core (Feistel, S-boxes, P-boxes)
 │   ├── des_modes.py            # DES ECB/CBC modes + padding
 │   ├── aes_core.py             # AES-128/192/256 (SubBytes, MixColumns...)
-│   └── aes_modes.py            # AES ECB/CBC/CTR modes + padding
+│   ├── aes_modes.py            # AES ECB/CBC/CTR modes + padding
+│   └── chatbot_knowledge.py    # 🤖 AI knowledge base (380 lines)
 │
 ├── 📁 templates/
-│   └── index.html              # Single-page app với Bootstrap 5
+│   └── index.html              # Single-page app với Bootstrap 5, chatbot UI
 │
 ├── 📁 static/
 │   ├── css/
-│   │   └── style.css           # Custom CSS, Glass morphism, Dark mode
-│   └── js/
-│       └── main.js             # JavaScript: UI logic, Copy, Theme toggle
+│   │   ├── style.css           # Custom CSS, Glass morphism, Dark mode
+│   │   └── chatbot.css         # 🤖 Chatbot UI styling (400 lines)
+│   ├── js/
+│   │   ├── main.js             # JavaScript: UI logic, Copy, Theme toggle
+│   │   └── chatbot.js          # 🤖 Chatbot client logic (250 lines)
+│   └── images/
+│       └── uit_logo.png        # UIT logo (favicon & header)
+│
+├── 📄 .env.example              # Environment variables template
+├── 📄 .gitignore                # Git ignore file
+└── 📄 CHATBOT_SETUP.md          # AI Chatbot setup guide
 │
 ├── 📁 data/                     # Test data & dictionaries
 │   ├── english_corpus.txt      # English text corpus cho training
@@ -483,15 +610,19 @@ Lab06-AnToanMangMayTinh/
 
 ### 📊 Code Statistics
 
-| Module            | Lines of Code | Mô tả                                    |
-| ----------------- | ------------- | ---------------------------------------- |
-| `app.py`          | ~582          | Flask routes, validation, error handling |
-| `aes_core.py`     | ~502          | AES implementation with key expansion    |
-| `aes_modes.py`    | ~200          | ECB/CBC/CTR modes                        |
-| `des_core.py`     | ~350          | DES Feistel network                      |
-| `substitution.py` | ~250          | Hill-climbing with simulated annealing   |
-| `vigenere.py`     | ~200          | Kasiski + IC analysis                    |
-| **TOTAL**         | **~2500+**    | **Pure Python implementation**           |
+| Module                 | Lines of Code | Mô tả                                                |
+| ---------------------- | ------------- | ---------------------------------------------------- |
+| `app.py`               | ~730          | Flask routes, validation, error handling, AI chatbot |
+| `chatbot_knowledge.py` | ~380          | AI knowledge base với semantic search                |
+| `aes_core.py`          | ~502          | AES implementation with key expansion                |
+| `aes_modes.py`         | ~200          | ECB/CBC/CTR modes                                    |
+| `des_core.py`          | ~350          | DES Feistel network                                  |
+| `substitution.py`      | ~370          | Hill-climbing with simulated annealing               |
+| `vigenere.py`          | ~351          | Kasiski + IC analysis                                |
+| `caesar.py`            | ~174          | Chi-square frequency analysis                        |
+| `chatbot.js`           | ~250          | Frontend chatbot UI & logic                          |
+| `chatbot.css`          | ~400          | Glass morphism chatbot styling                       |
+| **TOTAL**              | **~3700+**    | **Pure Python + JavaScript implementation**          |
 
 ## 🔬 Chi Tiết Thuật Toán
 
@@ -682,6 +813,9 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 ### 🔜 Planned Features
 
+- [x] **AI Chatbot** - Crypto assistant với offline knowledge base ✅ **DONE**
+- [x] **Gemini Integration** - Google AI cho câu hỏi phức tạp ✅ **DONE**
+- [x] **Hybrid Intelligence** - Smart fallback offline/online ✅ **DONE**
 - [ ] **RSA Implementation** - Public key cryptography
 - [ ] **Diffie-Hellman** - Key exchange
 - [ ] **Hash Functions** - SHA-256, SHA-3
@@ -697,6 +831,9 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 ### 🎨 UI/UX Improvements
 
+- [x] **UIT Logo Integration** - Clickable logo với animations ✅ **DONE**
+- [x] **Chatbot UI** - Glass morphism design với typing indicators ✅ **DONE**
+- [x] **Favicon** - UIT logo trong browser tab ✅ **DONE**
 - [ ] Drag & drop file upload
 - [ ] Progress bars cho long operations
 - [ ] Side-by-side comparison mode
@@ -784,6 +921,14 @@ source venv/bin/activate
 - Kiểm tra độ dài key (DES: 16 hex, AES-128: 32 hex)
 - CBC mode: IV phải giống lúc encrypt
 - Decrypt: input phải là hex format
+
+**AI Chatbot:**
+
+- Chatbot hoạt động 100% offline mặc định
+- Gemini API key là tùy chọn (cho câu hỏi phức tạp)
+- Free tier: 15 requests/phút, 1500 requests/ngày
+- Nếu hết quota: Chatbot tự động fallback offline
+- Knowledge base cover 90% câu hỏi phổ biến
 
 ### ⚠️ Warning về performance
 
@@ -1025,6 +1170,12 @@ SOFTWARE.
 7. [The Code Book by Simon Singh](https://simonsingh.net/books/the-code-book/)
 8. [Understanding Cryptography by Christof Paar](http://www.crypto-textbook.com/)
 9. [Applied Cryptography by Bruce Schneier](https://www.schneier.com/books/applied-cryptography/)
+
+### AI & Machine Learning
+
+10. [Google Gemini AI Studio](https://aistudio.google.com/) - Free API for AI chatbot
+11. [Gemini API Documentation](https://ai.google.dev/docs) - Official docs
+12. [RAG (Retrieval-Augmented Generation)](https://arxiv.org/abs/2005.11401) - Hybrid AI approach
 
 ---
 
