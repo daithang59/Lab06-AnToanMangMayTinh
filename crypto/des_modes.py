@@ -52,7 +52,7 @@ def _ecb_decrypt(ciphertext: bytes, subkeys) -> bytes:
     return pkcs7_unpad(b"".join(out))
 
 
-def _cbc_encrypt(plaintext: bytes, subkeys, iv: bytes) -> (bytes, bytes):
+def _cbc_encrypt(plaintext: bytes, subkeys, iv: bytes) -> tuple[bytes, bytes]:
     if iv is None:
         iv = os.urandom(BLOCK_SIZE)
     if len(iv) != BLOCK_SIZE:

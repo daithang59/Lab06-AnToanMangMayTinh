@@ -23,8 +23,10 @@ CLI:
 
 import string
 import random
+from functools import lru_cache
 
 ALPHABET = string.ascii_uppercase
+ALPHABET_SET = set(ALPHABET)  # For faster membership testing
 
 # Tần suất chữ cái tiếng Anh chuẩn
 ENGLISH_FREQ = {
@@ -106,14 +108,20 @@ def decrypt_vigenere(ciphertext: str, key: str) -> str:
 
 
 def _index_of_coincidence(seq: str) -> float:
-    """IC cho chuỗi seq (chỉ gồm A-Z)."""
+    """
+    IC cho chuỗi seq (chỉ gồm A-Z).
+    Optimized: faster counting with list, reduced operations.
+    """
     N = len(seq)
     if N <= 1:
         return 0.0
+
     counts = [0] * 26
     for ch in seq:
-        if ch in ALPHABET:
+        if ch in ALPHABET_SET:
             counts[ord(ch) - 65] += 1
+
+    # Calculate IC efficiently
     numerator = sum(c * (c - 1) for c in counts)
     return numerator / (N * (N - 1))
 
@@ -128,21 +136,26 @@ def _guess_key_lengths_by_ic(letters: str, max_key_len: int = 20, top_k: int = 7
     IC càng cao (gần IC tiếng Anh ~0.065) thì key_len càng có khả năng đúng.
 
     Trả về list (key_len, avg_ic) đã sort giảm dần theo avg_ic, lấy top_k.
+
+    Optimized: list comprehension, reduced allocations.
     """
     candidates = []
+    letters_len = len(letters)
 
-    for key_len in range(2, max_key_len + 1):  # bỏ key_len = 1 (Caesar)
-        ics = []
-        for i in range(key_len):
-            subset = letters[i::key_len]
-            if len(subset) > 1:
-                ics.append(_index_of_coincidence(subset))
-        if not ics:
-            continue
-        avg_ic = sum(ics) / len(ics)
-        candidates.append((key_len, avg_ic))
+    for key_len in range(2, min(max_key_len + 1, letters_len // 4)):
+        # Calculate IC for all subsets
+        ics = [
+            _index_of_coincidence(letters[i::key_len])
+            for i in range(key_len)
+            if len(letters[i::key_len]) > 1
+        ]
 
-    candidates.sort(key=lambda x: -x[1])  # avg_ic lớn hơn → tốt hơn
+        if ics:
+            avg_ic = sum(ics) / len(ics)
+            candidates.append((key_len, avg_ic))
+
+    # Sort by IC (higher is better) and return top_k
+    candidates.sort(key=lambda x: -x[1])
     return candidates[:top_k]
 
 
@@ -154,6 +167,8 @@ def _best_shift_for_subset(subset: str) -> int:
     subset: chuỗi chỉ gồm A-Z, thuộc về 1 vị trí khóa.
     Tìm shift (0..25) sao cho chi-square so với ENGLISH_FREQ là nhỏ nhất.
     shift chính là giá trị key-letter (A=0, B=1, ...).
+
+    Optimized: reduced memory allocations, faster calculation.
     """
     N = len(subset)
     if N == 0:
@@ -162,19 +177,21 @@ def _best_shift_for_subset(subset: str) -> int:
     best_shift = 0
     best_chi = float("inf")
 
+    # Pre-convert subset to indices for faster processing
+    subset_indices = [ord(ch) - 65 for ch in subset if ch in ALPHABET_SET]
+    N = len(subset_indices)
+
     for shift in range(26):
         counts = [0] * 26
-        for ch in subset:
-            c = ord(ch) - 65
-            # P = C - K, ở đây shift = K
-            p = (c - shift) % 26
-            counts[p] += 1
+        for idx in subset_indices:
+            counts[(idx - shift) % 26] += 1
 
-        chi = 0.0
-        for i, obs in enumerate(counts):
-            expected = ENGLISH_FREQ[ALPHABET[i]] * N
-            if expected > 0:
-                chi += (obs - expected) ** 2 / expected
+        # Calculate chi-square
+        chi = sum(
+            (obs - ENGLISH_FREQ[ALPHABET[i]] * N) ** 2 / (ENGLISH_FREQ[ALPHABET[i]] * N)
+            for i, obs in enumerate(counts)
+            if ENGLISH_FREQ[ALPHABET[i]] > 0
+        )
 
         if chi < best_chi:
             best_chi = chi
@@ -220,25 +237,25 @@ def _break_vigenere_internal(ciphertext: str, max_key_len: int = 20, top_k: int 
         + Ghep thanh key, giai toan ciphertext, tinh chi-square toan cuc.
     - Chon key co chi-square nho nhat.
     """
-    letters = ''.join(ch for ch in ciphertext.upper() if ch in ALPHABET)
+    letters = "".join(ch for ch in ciphertext.upper() if ch in ALPHABET)
     if len(letters) < 20:
         # too short to guess reliably
-        return 'A', decrypt_vigenere(ciphertext, 'A'), float('inf')
+        return "A", decrypt_vigenere(ciphertext, "A"), float("inf")
 
     candidates = _guess_key_lengths_by_ic(letters, max_key_len, top_k)
 
     best_key = None
     best_plain = None
-    best_score = float('inf')
+    best_score = float("inf")
 
     for key_len, avg_ic in candidates:
         shifts = []
         for i in range(key_len):
-            subset = ''.join(letters[j] for j in range(i, len(letters), key_len))
+            subset = "".join(letters[j] for j in range(i, len(letters), key_len))
             shift = _best_shift_for_subset(subset)
             shifts.append(shift)
 
-        key = ''.join(ALPHABET[s] for s in shifts)
+        key = "".join(ALPHABET[s] for s in shifts)
         plain = decrypt_vigenere(ciphertext, key)
 
         chi = _chi_square_text(plain)
@@ -252,7 +269,6 @@ def _break_vigenere_internal(ciphertext: str, max_key_len: int = 20, top_k: int 
         best_plain = decrypt_vigenere(ciphertext, best_key)
 
     return best_key, best_plain, best_score
-
 
 
 def break_vigenere(ciphertext: str):

@@ -20,8 +20,12 @@ import re
 import string
 import random
 from math import log
+from functools import lru_cache
 
 ALPHABET = string.ascii_lowercase
+
+# Pre-compile regex for better performance
+WORD_PATTERN = re.compile(r"[a-zA-Z]{3,}")
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 QUADGRAM_PATH = os.path.join(BASE_DIR, "data", "english_quadgrams.txt")
@@ -96,19 +100,22 @@ def _quad_score(text: str) -> float:
     """
     Score plaintext bằng quadgram log-prob.
     Chỉ dùng chữ cái a-z, bỏ hết ký tự khác.
+
+    Optimized: faster string building, single pass scoring.
     """
     _load_quadgrams()
     global _QUAD_LOG, _QUAD_DEFAULT
 
-    letters = [c for c in text.lower() if c in ALPHABET]
-    if len(letters) < 4:
+    # Build letter string in one pass
+    text_lower = text.lower()
+    s = "".join(c for c in text_lower if c in ALPHABET)
+
+    s_len = len(s)
+    if s_len < 4:
         return float("-inf")
 
-    s = "".join(letters)
-    score = 0.0
-    for i in range(len(s) - 3):
-        g = s[i : i + 4]
-        score += _QUAD_LOG.get(g, _QUAD_DEFAULT)
+    # Calculate score (slightly faster with direct access)
+    score = sum(_QUAD_LOG.get(s[i : i + 4], _QUAD_DEFAULT) for i in range(s_len - 3))
     return score
 
 
@@ -140,20 +147,22 @@ def _load_wordlist():
 def _word_bonus(text: str) -> float:
     """
     Bonus dựa trên wordlist:
-    - Tách word bằng regex [a-zA-Z]{3,}
+    - Tách word bằng pre-compiled regex
     - Tính tỉ lệ từ nằm trong wordlist
     - Nhân với hệ số nhỏ để tránh lấn át quadgram
+
+    Optimized: pre-compiled regex, reduced allocations.
     """
     wordset = _load_wordlist()
     if not wordset:
         return 0.0
 
-    words = re.findall(r"[a-zA-Z]{3,}", text)
+    words = WORD_PATTERN.findall(text)
     if not words:
         return 0.0
 
-    words = [w.lower() for w in words]
-    matched = sum(1 for w in words if w in wordset)
+    # Count matches in one pass (more efficient)
+    matched = sum(1 for w in words if w.lower() in wordset)
     ratio = matched / len(words)  # 0..1
 
     # Length factor: văn bản càng dài bonus càng đáng tin

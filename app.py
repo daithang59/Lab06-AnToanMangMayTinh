@@ -1,4 +1,6 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from werkzeug.utils import secure_filename
+import os
 
 # Import các module crypto bạn sẽ tự cài đặt
 from crypto.caesar import break_caesar
@@ -6,11 +8,62 @@ from crypto.substitution import break_substitution
 from crypto.vigenere import break_vigenere
 from crypto.des_modes import des_encrypt, des_decrypt
 from crypto.aes_modes import aes_encrypt, aes_decrypt
+from crypto.charset_filter import validate_and_filter
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = (
     "change-this-secret-key"  # nếu sau này bạn dùng flash, session, v.v.
 )
+
+# File upload configuration
+MAX_CONTENT_LENGTH = 10000  # 10000 characters
+ALLOWED_EXTENSIONS = {"txt"}
+
+
+def allowed_file(filename):
+    """Check if file has allowed extension"""
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def validate_text_length(text, max_length=MAX_CONTENT_LENGTH):
+    """Validate text length"""
+    if len(text) > max_length:
+        return (
+            False,
+            f"Text quá dài. Tối đa {max_length} ký tự (hiện tại: {len(text)} ký tự).",
+        )
+    return True, None
+
+
+def process_input(file, text_input):
+    """
+    Process file upload or text input with validation.
+    Returns: (success, data_or_error_message)
+    """
+    data = None
+
+    # Priority: text input > file
+    if text_input and text_input.strip():
+        data = text_input.strip()
+    elif file and file.filename:
+        # Validate file extension
+        if not allowed_file(file.filename):
+            return False, "Chỉ chấp nhận file .txt"
+        # Read file
+        try:
+            data = file.read().decode("utf-8", errors="ignore")
+        except Exception as e:
+            return False, f"Lỗi đọc file: {str(e)}"
+
+    if not data:
+        return False, "Vui lòng upload file .txt HOẶC nhập text trực tiếp"
+
+    # Validate length
+    is_valid, error_msg = validate_text_length(data)
+    if not is_valid:
+        return False, error_msg
+
+    return True, data
 
 
 @app.route("/")
@@ -29,22 +82,26 @@ def task1_caesar():
     file = request.files.get("cipher_file")
     cipher_text = request.form.get("cipher_text") or ""
 
-    # Xử lý input
-    ciphertext = None
-    if cipher_text.strip():
-        # Người dùng nhập vào textarea
-        ciphertext = cipher_text
-    elif file:
-        # Người dùng upload file
-        ciphertext = file.read().decode("utf-8", errors="ignore")
-
-    if not ciphertext:
+    # Process and validate input
+    success, result = process_input(file, cipher_text)
+    if not success:
         return render_template(
             "index.html",
             active_tab="task1",
-            task1_result="ERROR: Vui lòng upload file HOẶC nhập vào textarea.",
+            task1_result=f"ERROR: {result}",
             task1_key="",
         )
+
+    ciphertext = result
+
+    # Validate và filter charset
+    is_valid, filtered_text, warning = validate_and_filter(ciphertext, "Caesar")
+    if warning:
+        # Có ký tự không hợp lệ, hiển thị warning nhưng vẫn tiếp tục xử lý
+        ciphertext = filtered_text
+        warning_msg = f"\n{warning}\n\n"
+    else:
+        warning_msg = ""
 
     # Gọi hàm giải Caesar
     key, plaintext = break_caesar(ciphertext)
@@ -53,7 +110,7 @@ def task1_caesar():
         "index.html",
         active_tab="task1",
         task1_key=key,
-        task1_result=plaintext,
+        task1_result=warning_msg + plaintext,
     )
 
 
@@ -65,23 +122,26 @@ def task2_substitution():
     file = request.files.get("cipher_file")
     cipher_text = request.form.get("cipher_text") or ""
 
-    # Xử lý input
-    ciphertext = None
-    if cipher_text.strip():
-        # Người dùng nhập vào textarea
-        ciphertext = cipher_text
-    elif file:
-        # Người dùng upload file
-        ciphertext = file.read().decode("utf-8", errors="ignore")
-
-    if not ciphertext:
+    # Process and validate input
+    success, result = process_input(file, cipher_text)
+    if not success:
         return render_template(
             "index.html",
             active_tab="task2",
-            task2_result="ERROR: Vui lòng upload file HOẶC nhập vào textarea.",
+            task2_result=f"ERROR: {result}",
             task2_score="",
             task2_mapping="",
         )
+
+    ciphertext = result
+
+    # Validate và filter charset
+    is_valid, filtered_text, warning = validate_and_filter(ciphertext, "Substitution")
+    if warning:
+        ciphertext = filtered_text
+        warning_msg = f"\n{warning}\n\n"
+    else:
+        warning_msg = ""
 
     # Gọi hàm crack substitution
     score, mapping_str, plaintext = break_substitution(ciphertext)
@@ -91,7 +151,7 @@ def task2_substitution():
         active_tab="task2",
         task2_score=score,
         task2_mapping=mapping_str,
-        task2_result=plaintext,
+        task2_result=warning_msg + plaintext,
     )
 
 
@@ -103,23 +163,26 @@ def task3_vigenere():
     file = request.files.get("cipher_file")
     cipher_text = request.form.get("cipher_text") or ""
 
-    # Xử lý input
-    ciphertext = None
-    if cipher_text.strip():
-        # Người dùng nhập vào textarea
-        ciphertext = cipher_text
-    elif file:
-        # Người dùng upload file
-        ciphertext = file.read().decode("utf-8", errors="ignore")
-
-    if not ciphertext:
+    # Process and validate input
+    success, result = process_input(file, cipher_text)
+    if not success:
         return render_template(
             "index.html",
             active_tab="task3",
-            task3_result="ERROR: Vui lòng upload file HOẶC nhập vào textarea.",
+            task3_result=f"ERROR: {result}",
             task3_key="",
             task3_score="",
         )
+
+    ciphertext = result
+
+    # Validate và filter charset
+    is_valid, filtered_text, warning = validate_and_filter(ciphertext, "Vigenère")
+    if warning:
+        ciphertext = filtered_text
+        warning_msg = f"\n{warning}\n\n"
+    else:
+        warning_msg = ""
 
     # ➜ nhận 3 giá trị
     key, plaintext, score = break_vigenere(ciphertext)
@@ -128,7 +191,7 @@ def task3_vigenere():
         "index.html",
         active_tab="task3",
         task3_key=key,
-        task3_result=plaintext,
+        task3_result=warning_msg + plaintext,
         task3_score=score,
     )
 
@@ -344,13 +407,28 @@ def task5_aes():
             task5_iv="",
         )
 
-    # Key
+    # Get key size (default to 128 if not specified)
+    key_size = request.form.get("key_size", "128")
+
+    # Key size mapping
+    key_size_map = {
+        "128": (32, 16, "AES-128"),
+        "192": (48, 24, "AES-192"),
+        "256": (64, 32, "AES-256"),
+    }
+
+    if key_size not in key_size_map:
+        key_size = "128"  # Default fallback
+
+    expected_hex_len, expected_bytes, aes_name = key_size_map[key_size]
+
+    # Key validation
     key_hex = "".join(key_hex.split())
-    if len(key_hex) != 32:
+    if len(key_hex) != expected_hex_len:
         return render_template(
             "index.html",
             active_tab="task5",
-            task5_result=f"ERROR: AES-128 key phải là 32 ký tự hex (16 bytes). Bạn đang nhập {len(key_hex)} ký tự.",
+            task5_result=f"ERROR: {aes_name} key phải là {expected_hex_len} ký tự hex ({expected_bytes} bytes). Bạn đang nhập {len(key_hex)} ký tự.",
             task5_iv="",
         )
     try:
@@ -418,6 +496,84 @@ def task5_aes():
         task5_result=result_output,
         task5_iv=iv_hex_out,
     )
+
+
+# ====================
+# API ENDPOINTS (AJAX)
+# ====================
+@app.route("/api/task1/caesar", methods=["POST"])
+def api_task1_caesar():
+    """API endpoint for Caesar cipher breaking (AJAX)"""
+    try:
+        file = request.files.get("cipher_file")
+        cipher_text = request.form.get("cipher_text") or ""
+
+        # Process and validate input
+        success, result = process_input(file, cipher_text)
+        if not success:
+            return jsonify({"success": False, "error": result}), 400
+
+        ciphertext = result
+
+        # Gọi hàm giải Caesar
+        key, plaintext = break_caesar(ciphertext)
+
+        return jsonify({"success": True, "key": key, "plaintext": plaintext})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/task2/substitution", methods=["POST"])
+def api_task2_substitution():
+    """API endpoint for Substitution cipher breaking (AJAX)"""
+    try:
+        file = request.files.get("cipher_file")
+        cipher_text = request.form.get("cipher_text") or ""
+
+        # Process and validate input
+        success, result = process_input(file, cipher_text)
+        if not success:
+            return jsonify({"success": False, "error": result}), 400
+
+        ciphertext = result
+
+        # Gọi hàm crack substitution
+        score, mapping_str, plaintext = break_substitution(ciphertext)
+
+        return jsonify(
+            {
+                "success": True,
+                "score": score,
+                "mapping": mapping_str,
+                "plaintext": plaintext,
+            }
+        )
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/task3/vigenere", methods=["POST"])
+def api_task3_vigenere():
+    """API endpoint for Vigenere cipher breaking (AJAX)"""
+    try:
+        file = request.files.get("cipher_file")
+        cipher_text = request.form.get("cipher_text") or ""
+
+        # Process and validate input
+        success, result = process_input(file, cipher_text)
+        if not success:
+            return jsonify({"success": False, "error": result}), 400
+
+        ciphertext = result
+
+        # Nhận 3 giá trị
+        key, plaintext, score = break_vigenere(ciphertext)
+
+        return jsonify(
+            {"success": True, "key": key, "plaintext": plaintext, "score": score}
+        )
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 if __name__ == "__main__":

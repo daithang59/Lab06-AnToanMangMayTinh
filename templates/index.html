@@ -80,13 +80,41 @@
       </svg>
     </button>
 
+    <!-- Keyboard Shortcuts Hint -->
+    <div class="keyboard-hint" id="keyboard-hint">
+      💡 <strong>Shortcuts:</strong> <kbd>Ctrl</kbd>+<kbd>Enter</kbd> Submit |
+      <kbd>Ctrl</kbd>+<kbd>D</kbd> Dark Mode | <kbd>Ctrl</kbd>+<kbd>K</kbd>
+      Upload File
+    </div>
+
     <div class="container py-4">
-      <h1 class="mb-4 text-center fw-bold">
-        Lab06 – Review of Encryption Algorithms
-      </h1>
-      <p class="text-center text-muted mb-4" style="font-size: 1.1rem">
-        MSSV: 23521422 - Huỳnh Lê Đại Thắng - UIT
-      </p>
+      <!-- Header with Logo -->
+      <div class="text-center mb-4">
+        <div class="d-flex justify-content-center align-items-center mb-3">
+          <a
+            href="https://www.uit.edu.vn"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Visit UIT Website"
+          >
+            <img
+              src="{{ url_for('static', filename='images/uit_logo.png') }}"
+              alt="UIT Logo"
+              class="uit-logo me-3"
+              style="
+                height: 100px;
+                width: auto;
+                object-fit: contain;
+                cursor: pointer;
+              "
+            />
+          </a>
+          <h1 class="mb-0 fw-bold">Lab06 – Review of Encryption Algorithms</h1>
+        </div>
+        <p class="text-muted" style="font-size: 1.1rem">
+          MSSV: 23521422 - Huỳnh Lê Đại Thắng - UIT
+        </p>
+      </div>
 
       <!-- LAYOUT: VERTICAL TABS (LEFT) + CONTENT (RIGHT) -->
       <div class="row">
@@ -209,6 +237,7 @@
                         name="cipher_file"
                         class="form-control"
                         id="task1-file-input"
+                        accept=".txt"
                       />
                     </div>
 
@@ -247,7 +276,7 @@
                     <button
                       type="button"
                       class="btn btn-sm btn-outline-primary"
-                      onclick="copyToClipboard('task1-output')"
+                      onclick="copyToClipboard('task1-output', this)"
                     >
                       <i class="bi bi-clipboard"></i> Copy
                     </button>
@@ -333,6 +362,7 @@
                         name="cipher_file"
                         class="form-control"
                         id="task2-file-input"
+                        accept=".txt"
                       />
                     </div>
 
@@ -372,7 +402,7 @@
                     <button
                       type="button"
                       class="btn btn-sm btn-outline-primary"
-                      onclick="copyToClipboard('task2-output')"
+                      onclick="copyToClipboard('task2-output', this)"
                     >
                       <i class="bi bi-clipboard"></i> Copy
                     </button>
@@ -458,6 +488,7 @@
                         name="cipher_file"
                         class="form-control"
                         id="task3-file-input"
+                        accept=".txt"
                       />
                     </div>
 
@@ -499,7 +530,7 @@
                     <button
                       type="button"
                       class="btn btn-sm btn-outline-primary"
-                      onclick="copyToClipboard('task3-output')"
+                      onclick="copyToClipboard('task3-output', this)"
                     >
                       <i class="bi bi-clipboard"></i> Copy
                     </button>
@@ -540,6 +571,23 @@
                     enctype="multipart/form-data"
                     id="task4-form"
                   >
+                    <!-- Format Information Alert -->
+                    <div class="alert alert-info" role="alert">
+                      <h6 class="alert-heading">
+                        <i class="bi bi-info-circle-fill"></i> 📖 Định dạng
+                        Input/Output
+                      </h6>
+                      <small>
+                        <strong>Encrypt:</strong> Input = plaintext (UTF-8) →
+                        Output = ciphertext (hex)<br />
+                        <strong>Decrypt:</strong> Input = ciphertext (hex) →
+                        Output = plaintext (UTF-8)<br />
+                        <strong>Mặc định:</strong> Ciphertext sử dụng
+                        <strong>Hexadecimal format</strong> (backend cũng hỗ trợ
+                        Base64)
+                      </small>
+                    </div>
+
                     <!-- Action Selection -->
                     <div class="mb-4">
                       <label class="form-label fw-semibold">Chọn chế độ</label>
@@ -617,6 +665,7 @@
                         name="input_file"
                         class="form-control"
                         id="task4-file-input"
+                        accept=".txt"
                       />
                       <div class="form-text" id="task4-file-hint">
                         File chứa dữ liệu plaintext cần mã hóa
@@ -656,8 +705,14 @@
 
                       <div class="col-md-6 mb-3">
                         <label class="form-label fw-semibold"
-                          >Key (hex, 16 chars)</label
-                        >
+                          >Key (hex, 16 chars)
+                          <i
+                            class="bi bi-info-circle"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="top"
+                            title="DES sử dụng khóa 8 bytes (64 bit). Nhập 16 ký tự hex (0-9, A-F). Ví dụ: 0123456789ABCDEF"
+                          ></i>
+                        </label>
                         <input
                           type="text"
                           name="key"
@@ -666,7 +721,9 @@
                           required
                         />
                         <div class="form-text">
-                          Chỉ chấp nhận 16 ký tự hex (0-9, A-F)
+                          🔑 <strong>DES Key:</strong> 8 bytes = 16 hex chars.
+                          Chỉ chấp nhận 0-9, A-F (case-insensitive). <br />💡
+                          <em>Mặc định output format: Hexadecimal</em>
                         </div>
                       </div>
                     </div>
@@ -674,8 +731,14 @@
                     <!-- IV for CBC -->
                     <div class="mb-3">
                       <label class="form-label fw-semibold"
-                        >IV (hex, 16 chars - chỉ cho CBC)</label
-                      >
+                        >IV (hex, 16 chars - chỉ cho CBC)
+                        <i
+                          class="bi bi-info-circle"
+                          data-bs-toggle="tooltip"
+                          data-bs-placement="top"
+                          title="Initialization Vector cho CBC mode. ECB không cần IV. CBC encrypt có thể để trống (auto-generate), CBC decrypt phải nhập."
+                        ></i>
+                      </label>
                       <input
                         type="text"
                         name="iv"
@@ -683,8 +746,12 @@
                         placeholder="Để trống nếu dùng ECB hoặc tự sinh IV"
                       />
                       <div class="form-text">
-                        16 ký tự hex. Bắt buộc nếu decrypt với CBC. Encrypt sẽ
-                        tự sinh nếu bỏ trống.
+                        🔐 <strong>IV:</strong> 8 bytes = 16 hex chars cho DES.
+                        <br />• <strong>ECB mode:</strong> Không cần IV (để
+                        trống) <br />• <strong>CBC Encrypt:</strong> Để trống sẽ
+                        tự động sinh IV ngẫu nhiên <br />•
+                        <strong>CBC Decrypt:</strong> Bắt buộc nhập IV từ lúc
+                        encrypt
                       </div>
                     </div>
 
@@ -695,7 +762,31 @@
 
                   {% if task4_result %}
                   <hr />
-                  <p><strong>IV Used:</strong> {{ task4_iv }}</p>
+                  {% if task4_iv %}
+                  <div class="mb-3">
+                    <div
+                      class="d-flex justify-content-between align-items-center mb-2"
+                    >
+                      <label class="form-label fw-semibold mb-0"
+                        >IV Used:</label
+                      >
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-secondary"
+                        onclick="copyToClipboard('task4-iv-output', this)"
+                      >
+                        <i class="bi bi-clipboard"></i> Copy IV
+                      </button>
+                    </div>
+                    <input
+                      type="text"
+                      id="task4-iv-output"
+                      class="form-control"
+                      value="{{ task4_iv }}"
+                      readonly
+                    />
+                  </div>
+                  {% endif %}
                   <div
                     class="d-flex justify-content-between align-items-center mb-2"
                   >
@@ -705,7 +796,7 @@
                     <button
                       type="button"
                       class="btn btn-sm btn-outline-primary"
-                      onclick="copyToClipboard('task4-output')"
+                      onclick="copyToClipboard('task4-output', this)"
                     >
                       <i class="bi bi-clipboard"></i> Copy
                     </button>
@@ -745,6 +836,24 @@
                     action="{{ url_for('task5_aes') }}"
                     enctype="multipart/form-data"
                   >
+                    <!-- Format Information Alert -->
+                    <div class="alert alert-info" role="alert">
+                      <h6 class="alert-heading">
+                        <i class="bi bi-info-circle-fill"></i> 📖 Định dạng
+                        Input/Output
+                      </h6>
+                      <small>
+                        <strong>Encrypt:</strong> Input = plaintext (UTF-8) →
+                        Output = ciphertext (hex)<br />
+                        <strong>Decrypt:</strong> Input = ciphertext (hex) →
+                        Output = plaintext (UTF-8)<br />
+                        <strong>Mặc định:</strong> AES-128 với
+                        <strong>Hexadecimal format</strong>. Backend hỗ trợ
+                        AES-192/256 và Base64.<br />
+                        <strong>Padding:</strong> PKCS#7 (tự động xử lý)
+                      </small>
+                    </div>
+
                     <!-- Action Selection -->
                     <div class="mb-4">
                       <label class="form-label fw-semibold">Chọn chế độ</label>
@@ -822,6 +931,7 @@
                         name="input_file"
                         class="form-control"
                         id="task5-file-input"
+                        accept=".txt"
                       />
                       <div class="form-text" id="task5-file-hint">
                         File chứa dữ liệu plaintext cần mã hóa
@@ -851,7 +961,24 @@
 
                     <!-- Mode and Key Settings -->
                     <div class="row">
-                      <div class="col-md-6 mb-3">
+                      <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold"
+                          >AES Key Size</label
+                        >
+                        <select
+                          class="form-select"
+                          id="task5-key-size"
+                          name="key_size"
+                          required
+                        >
+                          <option value="128" selected>AES-128 (32 hex)</option>
+                          <option value="192">AES-192 (48 hex)</option>
+                          <option value="256">AES-256 (64 hex)</option>
+                        </select>
+                        <div class="form-text">Chọn độ dài khóa AES</div>
+                      </div>
+
+                      <div class="col-md-4 mb-3">
                         <label class="form-label fw-semibold">Mode</label>
                         <select class="form-select" name="mode" required>
                           <option value="ECB">ECB</option>
@@ -859,19 +986,26 @@
                         </select>
                       </div>
 
-                      <div class="col-md-6 mb-3">
+                      <div class="col-md-4 mb-3">
                         <label class="form-label fw-semibold"
-                          >Key (hex, 32 chars)</label
-                        >
+                          >Key (hex)
+                          <i
+                            class="bi bi-info-circle"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="top"
+                            title="Độ dài key phụ thuộc vào AES key size đã chọn: 128-bit=32 hex, 192-bit=48 hex, 256-bit=64 hex"
+                          ></i>
+                        </label>
                         <input
                           type="text"
                           name="key"
+                          id="task5-key-input"
                           class="form-control"
-                          placeholder="2b7e151628aed2a6abf7158809cf4f3c"
+                          placeholder="2B7E151628AED2A6ABF7158809CF4F3C"
                           required
                         />
-                        <div class="form-text">
-                          Chỉ chấp nhận 32 ký tự hex (0-9, A-F)
+                        <div class="form-text" id="task5-key-hint">
+                          🔑 <strong>AES-128:</strong> 32 hex chars (16 bytes)
                         </div>
                       </div>
                     </div>
@@ -879,8 +1013,14 @@
                     <!-- IV for CBC -->
                     <div class="mb-3">
                       <label class="form-label fw-semibold"
-                        >IV (hex, 32 chars - chỉ cho CBC)</label
-                      >
+                        >IV (hex, 32 chars - chỉ cho CBC)
+                        <i
+                          class="bi bi-info-circle"
+                          data-bs-toggle="tooltip"
+                          data-bs-placement="top"
+                          title="Initialization Vector cho CBC mode. Phải bằng block size (16 bytes = 32 hex). ECB không dùng IV."
+                        ></i>
+                      </label>
                       <input
                         type="text"
                         name="iv"
@@ -888,8 +1028,13 @@
                         placeholder="Để trống nếu dùng ECB hoặc tự sinh IV"
                       />
                       <div class="form-text">
-                        32 ký tự hex. Bắt buộc nếu decrypt với CBC. Encrypt sẽ
-                        tự sinh nếu bỏ trống.
+                        🔐 <strong>IV:</strong> 16 bytes = 32 hex chars cho AES
+                        (block size 128-bit). <br />•
+                        <strong>ECB mode:</strong> Không cần IV (để trống)
+                        <br />• <strong>CBC Encrypt:</strong> Để trống sẽ tự
+                        động sinh IV ngẫu nhiên <br />•
+                        <strong>CBC Decrypt:</strong> Bắt buộc nhập IV từ lúc
+                        encrypt
                       </div>
                     </div>
 
@@ -900,7 +1045,31 @@
 
                   {% if task5_result %}
                   <hr />
-                  <p><strong>IV Used:</strong> {{ task5_iv }}</p>
+                  {% if task5_iv %}
+                  <div class="mb-3">
+                    <div
+                      class="d-flex justify-content-between align-items-center mb-2"
+                    >
+                      <label class="form-label fw-semibold mb-0"
+                        >IV Used:</label
+                      >
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-secondary"
+                        onclick="copyToClipboard('task5-iv-output', this)"
+                      >
+                        <i class="bi bi-clipboard"></i> Copy IV
+                      </button>
+                    </div>
+                    <input
+                      type="text"
+                      id="task5-iv-output"
+                      class="form-control"
+                      value="{{ task5_iv }}"
+                      readonly
+                    />
+                  </div>
+                  {% endif %}
                   <div
                     class="d-flex justify-content-between align-items-center mb-2"
                   >
@@ -910,7 +1079,7 @@
                     <button
                       type="button"
                       class="btn btn-sm btn-outline-primary"
-                      onclick="copyToClipboard('task5-output')"
+                      onclick="copyToClipboard('task5-output', this)"
                     >
                       <i class="bi bi-clipboard"></i> Copy
                     </button>
