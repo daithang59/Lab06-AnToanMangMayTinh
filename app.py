@@ -23,6 +23,8 @@ app = Flask(__name__)
 app.config["SECRET_KEY"] = (
     "change-this-secret-key"  # nếu sau này bạn dùng flash, session, v.v.
 )
+app.config["TEMPLATES_AUTO_RELOAD"] = True
+app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
 
 # File upload configuration
 MAX_CONTENT_LENGTH = 10000  # 10000 characters
@@ -524,11 +526,18 @@ def api_task1_caesar():
 
         ciphertext = result
 
+        # Debug log
+        print(f"[DEBUG] Ciphertext length: {len(ciphertext)}")
+        print(f"[DEBUG] First 100 chars: {ciphertext[:100]}")
+
         # Gọi hàm giải Caesar
         key, plaintext = break_caesar(ciphertext)
 
+        print(f"[DEBUG] Key found: {key}")
+
         return jsonify({"success": True, "key": key, "plaintext": plaintext})
     except Exception as e:
+        print(f"[ERROR] {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -608,13 +617,13 @@ def chatbot():
         # STEP 1: Try offline knowledge base first
         offline_response = get_offline_response(user_message)
 
-        # If offline has confident answer (not the fallback "🤔" message), use it immediately
-        if offline_response and not offline_response.startswith("🤔"):
+        # If offline has confident answer (not the fallback "??" message), use it immediately
+        if offline_response and not offline_response.lstrip().startswith("??"):
             return jsonify(
                 {
                     "success": True,
                     "response": offline_response
-                    + "\n\n_💡 Powered by Offline Knowledge Base_",
+                    + "\n\n_?? Powered by Offline Knowledge Base_",
                 }
             )
 
@@ -637,7 +646,7 @@ Nhiệm vụ của bạn là giúp người dùng hiểu về:
 - Mã cổ điển (Caesar, Substitution, Vigenère)
 - Thuật toán mã hóa hiện đại (DES, AES)
 - Kỹ thuật phân tích mật mã (cryptanalysis)
-- Các chế độ block cipher (ECB, CBC, CTR)
+- Các chế độ block cipher (ECB, CBC)
 - Best practices trong mật mã học
 
 TRẢ LỜI BẰNG TIẾNG VIỆT. Giải thích rõ ràng, súc tích, mang tính giáo dục. Dùng ví dụ khi cần thiết.

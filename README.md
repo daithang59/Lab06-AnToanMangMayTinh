@@ -54,15 +54,15 @@ Lab06 là một ứng dụng web toàn diện cho phép người dùng:
 
 #### **Task 2: Substitution Cipher Breaker**
 
-- Hill-climbing optimization với Simulated Annealing
+- Hill-climbing (random restart) d?a trên quadgram
 - Scoring dựa trên quadgram statistics
 - Word-bonus để tăng độ chính xác
 - Tùy chỉnh số rounds và sample size
 
 #### **Task 3: Vigenère Cipher Breaker**
 
-- Kasiski examination để tìm key length
-- Index of Coincidence (IC) analysis
+- Index of Coincidence (IC) để ý?c lý?ng key length
+- Chi-square frequency analysis cho t?ng v? trí khóa
 - Tấn công từng phần của key độc lập
 - Hỗ trợ key length từ 3-20 ký tự
 
@@ -82,7 +82,7 @@ Lab06 là một ứng dụng web toàn diện cho phép người dùng:
 #### **Task 5: AES (Advanced Encryption Standard)**
 
 - ✅ Triển khai AES-128/192/256 từ cơ bản
-- ✅ Hỗ trợ modes: **ECB**, **CBC**, **CTR**
+- ✅ Hỗ trợ modes: **ECB**, **CBC**
 - ✅ Input format:
   - **Encrypt**: Text/Hex → Output Hex
   - **Decrypt**: Hex → Output Text
@@ -90,9 +90,9 @@ Lab06 là một ứng dụng web toàn diện cho phép người dùng:
   - AES-128: 32 hex chars (16 bytes)
   - AES-192: 48 hex chars (24 bytes)
   - AES-256: 64 hex chars (32 bytes)
-- ✅ IV: 32 hex chars cho CBC/CTR mode (auto-gen khi encrypt)
+- ✅ IV: 32 hex chars cho CBC mode (auto-gen khi encrypt)
 - ✅ PKCS#7 padding cho ECB/CBC
-- ✅ Counter mode cho CTR (không cần padding)
+- ✅ PKCS#7 padding cho ECB/CBC
 
 ### 🔐 Security & Validation
 
@@ -128,7 +128,7 @@ Lab06 là một ứng dụng web toàn diện cho phép người dùng:
   - Vigenère (IC analysis, frequency attack)
   - DES (Feistel network, 56-bit security)
   - AES (SPN structure, 128/192/256-bit)
-  - Block cipher modes (ECB, CBC, CTR)
+  - Block cipher modes (ECB, CBC)
 - ✅ **Bilingual** - Hỗ trợ tiếng Việt và tiếng Anh
 - ✅ **Markdown Formatting** - Code blocks, bold, lists
 
@@ -209,19 +209,19 @@ python app.py
 - **Chi-Square Test**: Frequency analysis cho Caesar
 - **Quadgram Analysis**: N-gram statistics cho Substitution
 - **Index of Coincidence (IC)**: Key length detection cho Vigenère
-- **Kasiski Examination**: Pattern matching cho Vigenère
+- **Index of Coincidence (IC)**: Ước lượng độ dài key cho Vigenère
 
 #### Optimization Techniques
 
 - **Hill-Climbing**: Local search algorithm
-- **Simulated Annealing**: Escape local maxima
+- **Key swap search**: Hoán đổi cặp ký tự khi score t?ng
 - **Random Restarts**: Multiple attempts với initial states khác nhau
 
 #### Modern Cryptography
 
 - **DES**: Feistel network, 16 rounds, S-boxes, P-boxes, key schedule
 - **AES**: SubBytes (S-box), ShiftRows, MixColumns, AddRoundKey, Key Expansion
-- **Block Cipher Modes**: ECB, CBC, CTR
+- **Block Cipher Modes**: ECB, CBC
 - **Padding**: PKCS#7 padding scheme
 
 ## 📦 Cài Đặt
@@ -357,7 +357,7 @@ Plaintext: HELLO WORLD! THIS IS A TEST MESSAGE.
 
 ```
 Ciphertext: LXFOPVEFRNHR
-Key Length: 5 (detected by Kasiski)
+Key Length: 5 (detected by IC)
 → Click "Break Cipher"
 Key Found: LEMON
 Score: 0.052 (IC)
@@ -370,7 +370,7 @@ Plaintext: ATTACKATDAWN
 2. Upload/paste ciphertext (ít nhất 100 chars)
 3. Click **"Break Cipher"**
 4. Algorithm sẽ:
-   - Detect key length (Kasiski + IC)
+   - Detect key length (IC)
    - Break từng phần của key
    - Combine để tìm full key
 5. Xem key, score và plaintext
@@ -419,16 +419,16 @@ Plaintext: "Advanced Encryption Standard"
 Ciphertext: 8a9b2c3d4e5f6a7b8c9d0e1f2a3b4c5d...
 ```
 
-**AES-256 with CTR mode:**
+**AES-256 with CBC mode:**
 
 ```
 Operation: Encrypt
 Algorithm: AES-256
-Mode: CTR (Counter mode - stream cipher like)
+Mode: CBC mode
 Key (hex): 000102...1e1f (64 hex chars)
 IV (hex): [auto-generated]
 Plaintext: "Long message can be any length!"
-→ Result (no padding needed for CTR)
+→ Result (PKCS#7 padding auto-handle cho CBC)
 ```
 
 #### 📝 Hướng dẫn sử dụng DES/AES
@@ -438,13 +438,12 @@ Plaintext: "Long message can be any length!"
 3. **Chọn Mode**:
    - **ECB** (Electronic Codebook) - không cần IV
    - **CBC** (Cipher Block Chaining) - cần IV
-   - **CTR** (Counter Mode - chỉ AES) - cần IV
 4. **Nhập Key** (hex format):
    - **DES**: 16 hex chars (8 bytes)
    - **AES-128**: 32 hex chars (16 bytes)
    - **AES-192**: 48 hex chars (24 bytes)
    - **AES-256**: 64 hex chars (32 bytes)
-5. **Nhập IV** (nếu dùng CBC/CTR):
+5. **Nhập IV** (nếu dùng CBC):
    - **Encrypt**: Có thể để trống (auto-generate)
    - **Decrypt**: Bắt buộc phải nhập (lấy từ kết quả encrypt)
 6. **Nhập Input**:
@@ -460,7 +459,7 @@ Plaintext: "Long message can be any length!"
 - **Input**: Plaintext (text thông thường)
 - **Output**: Ciphertext (hex format)
 - **IV**: Có thể để trống, hệ thống tự sinh ngẫu nhiên
-- **Lưu IV**: Khi dùng CBC/CTR, nhớ lưu IV để decrypt sau này
+- **Lưu IV**: Khi dùng CBC, nhớ lưu IV để decrypt sau này
 
 ##### Decrypt (Giải mã)
 
@@ -473,7 +472,7 @@ Plaintext: "Long message can be any length!"
 
 - ❌ **"Key length không hợp lệ"**: Kiểm tra độ dài key
 - ❌ **"Invalid hex"**: Input decrypt phải là hex format
-- ❌ **"IV required"**: CBC/CTR mode cần IV khi decrypt
+- ❌ **"IV required"**: CBC mode cần IV khi decrypt
 - ❌ **"Padding error"**: Key hoặc IV không đúng
 
 ##### Best Practices
@@ -575,7 +574,7 @@ Lab06-AnToanMangMayTinh/
 │   ├── des_core.py             # DES core (Feistel, S-boxes, P-boxes)
 │   ├── des_modes.py            # DES ECB/CBC modes + padding
 │   ├── aes_core.py             # AES-128/192/256 (SubBytes, MixColumns...)
-│   ├── aes_modes.py            # AES ECB/CBC/CTR modes + padding
+│   ├── aes_modes.py            # AES ECB/CBC modes + padding
 │   └── chatbot_knowledge.py    # 🤖 AI knowledge base (380 lines)
 │
 ├── 📁 templates/
@@ -615,10 +614,10 @@ Lab06-AnToanMangMayTinh/
 | `app.py`               | ~730          | Flask routes, validation, error handling, AI chatbot |
 | `chatbot_knowledge.py` | ~380          | AI knowledge base với semantic search                |
 | `aes_core.py`          | ~502          | AES implementation with key expansion                |
-| `aes_modes.py`         | ~200          | ECB/CBC/CTR modes                                    |
+| `aes_modes.py`         | ~200          | ECB/CBC modes                                    |
 | `des_core.py`          | ~350          | DES Feistel network                                  |
 | `substitution.py`      | ~370          | Hill-climbing with simulated annealing               |
-| `vigenere.py`          | ~351          | Kasiski + IC analysis                                |
+| `vigenere.py`          | ~351          | IC + chi-square analysis                                |
 | `caesar.py`            | ~174          | Chi-square frequency analysis                        |
 | `chatbot.js`           | ~250          | Frontend chatbot UI & logic                          |
 | `chatbot.css`          | ~400          | Glass morphism chatbot styling                       |
@@ -636,12 +635,12 @@ Lab06-AnToanMangMayTinh/
 
 - **Phương pháp**: Hill-climbing với random restarts
 - **Scoring**: Quadgram frequency + word bonus
-- **Optimization**: Simulated Annealing để tránh local maxima
+- **Optimization**: Hill-climbing + random restart để tránh local maxima
 - **Complexity**: O(rounds × swaps × text_length)
 
 ### Vigenère Cipher
 
-- **Bước 1**: Kasiski examination → ước lượng key length
+- **Bước 1**: Index of Coincidence → ước lượng key length
 - **Bước 2**: Index of Coincidence → xác nhận key length
 - **Bước 3**: Tách thành các Caesar ciphers độc lập
 - **Bước 4**: Giải từng phần bằng frequency analysis
@@ -698,7 +697,7 @@ Lab06-AnToanMangMayTinh/
 
 - **ECB (Electronic Codebook)**: Mã hóa độc lập từng block
 - **CBC (Cipher Block Chaining)**: Chaining với IV
-- **CTR (Counter Mode)**: Stream cipher mode, không cần padding
+- **CBC**: Stream cipher mode, không cần padding
 
 ## 🎓 Context & Assignment
 
@@ -742,7 +741,7 @@ Project này giúp bạn:
 - ✅ Thực hành **triển khai từ đầu** (from scratch) các algorithms
 - ✅ Nắm vững **cryptanalysis** - phân tích và phá mã
 - ✅ So sánh **mã hóa cổ điển** vs **mã hóa hiện đại**
-- ✅ Hiểu về **block cipher modes** (ECB, CBC, CTR)
+- ✅ Hiểu về **block cipher modes** (ECB, CBC)
 - ✅ Phát triển kỹ năng **Full-stack** (Python Backend + Web Frontend)
 - ✅ Học về **security best practices** và common vulnerabilities
 
@@ -787,12 +786,11 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
    - ✅ CBC with HMAC hoặc GCM (authenticated encryption)
    - ❌ Never use ECB mode (patterns visible)
-   - ⚠️ CTR mode: never reuse (key, nonce) pair
+   - ⚠️ CBC mode: never reuse (key, nonce) pair
 
 3. **IV/Nonce**
 
    - ✅ Random IV cho CBC
-   - ✅ Unique nonce cho CTR/GCM
    - ❌ Never reuse IV với cùng key
 
 4. **Padding**
@@ -1001,7 +999,6 @@ print(response.json())
 | AES-128 ECB | 1KB       | Encrypt   | < 0.04s   | ~25 KB/s   |
 | AES-128 CBC | 1KB       | Encrypt   | < 0.05s   | ~20 KB/s   |
 | AES-256 CBC | 1KB       | Encrypt   | < 0.08s   | ~13 KB/s   |
-| AES-256 CTR | 1KB       | Encrypt   | < 0.07s   | ~14 KB/s   |
 
 _Đo trên Python 3.11, Windows 11, Intel i5-1135G7_
 
@@ -1051,7 +1048,7 @@ _Đo trên Python 3.11, Windows 11, Intel i5-1135G7_
 
 - **ECB**: Mã hóa độc lập từng block → patterns visible → **KHÔNG AN TOÀN**
 - **CBC**: Chaining với IV → patterns hidden → An toàn hơn
-- **CTR**: Stream cipher mode → có thể parallel → Nhanh nhất
+- **CBC**: Chaining blocks, cần IV, an toàn hơn ECB
 
 Xem [ECB Penguin](<https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Electronic_codebook_(ECB)>) để hiểu tại sao ECB không an toàn.
 
@@ -1163,7 +1160,7 @@ SOFTWARE.
 
 4. [Practical Cryptography - Frequency Analysis](http://practicalcryptography.com/cryptanalysis/)
 5. [Quadgram Statistics for Breaking Ciphers](http://practicalcryptography.com/cryptanalysis/text-characterisation/quadgrams/)
-6. [Kasiski Examination Method](http://practicalcryptography.com/cryptanalysis/stochastic-searching/cryptanalysis-vigenere-cipher/)
+6. [Index of Coincidence (Wikipedia)](https://en.wikipedia.org/wiki/Index_of_coincidence)
 
 ### Sách và tài liệu
 

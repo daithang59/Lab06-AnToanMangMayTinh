@@ -333,6 +333,43 @@ function showCopyFeedback(elementId, buttonElement = null) {
   }, 2000);
 }
 
+// ========================================
+// DOWNLOAD TEXT FILE
+// ========================================
+function downloadTextFile(elementId, filename = "output.txt") {
+  // Get content from textarea or input
+  const element = document.getElementById(elementId);
+  if (!element) {
+    showToast("Không tìm thấy nội dung để tải!", "error");
+    return;
+  }
+
+  const content = element.value || element.textContent || "";
+
+  if (!content.trim()) {
+    showToast("Nội dung trống, không thể tải file!", "warning");
+    return;
+  }
+
+  // Create blob and download
+  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+
+  // Trigger download
+  document.body.appendChild(link);
+  link.click();
+
+  // Cleanup
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+
+  // Show success notification
+  showToast(`Đã tải file: ${filename}`, "success", "Download thành công");
+}
+
 // Helper: auto resize textarea height to fit content
 function autoResizeTextareas() {
   document.querySelectorAll("textarea.form-control").forEach((ta) => {
@@ -794,11 +831,16 @@ function displayResults(taskId, data) {
       <p><strong>Detected Key:</strong> ${data.key}</p>
       <div class="d-flex justify-content-between align-items-center mb-2">
         <label class="form-label fw-semibold mb-0">Plaintext:</label>
-        <button type="button" class="btn btn-sm btn-outline-primary" onclick="copyResultText(this)">
-          <i class="bi bi-clipboard"></i> Copy
-        </button>
+        <div class="btn-group" role="group">
+          <button type="button" class="btn btn-sm btn-outline-primary" onclick="copyResultText(this)">
+            <i class="bi bi-clipboard"></i> Copy
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-success" onclick="downloadResultText(this, 'caesar_plaintext.txt')">
+            <i class="bi bi-download"></i> Download
+          </button>
+        </div>
       </div>
-      <textarea class="form-control" rows="10" readonly>${data.plaintext}</textarea>
+      <textarea class="form-control result-textarea" rows="10" readonly>${data.plaintext}</textarea>
     `;
   } else if (taskId === "task2") {
     html += `
@@ -806,11 +848,16 @@ function displayResults(taskId, data) {
       <p><strong>Mapping:</strong> ${data.mapping}</p>
       <div class="d-flex justify-content-between align-items-center mb-2">
         <label class="form-label fw-semibold mb-0">Plaintext:</label>
-        <button type="button" class="btn btn-sm btn-outline-primary" onclick="copyResultText(this)">
-          <i class="bi bi-clipboard"></i> Copy
-        </button>
+        <div class="btn-group" role="group">
+          <button type="button" class="btn btn-sm btn-outline-primary" onclick="copyResultText(this)">
+            <i class="bi bi-clipboard"></i> Copy
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-success" onclick="downloadResultText(this, 'substitution_plaintext.txt')">
+            <i class="bi bi-download"></i> Download
+          </button>
+        </div>
       </div>
-      <textarea class="form-control" rows="10" readonly>${data.plaintext}</textarea>
+      <textarea class="form-control result-textarea" rows="10" readonly>${data.plaintext}</textarea>
     `;
   } else if (taskId === "task3") {
     html += `
@@ -820,11 +867,16 @@ function displayResults(taskId, data) {
       </p>
       <div class="d-flex justify-content-between align-items-center mb-2">
         <label class="form-label fw-semibold mb-0">Plaintext:</label>
-        <button type="button" class="btn btn-sm btn-outline-primary" onclick="copyResultText(this)">
-          <i class="bi bi-clipboard"></i> Copy
-        </button>
+        <div class="btn-group" role="group">
+          <button type="button" class="btn btn-sm btn-outline-primary" onclick="copyResultText(this)">
+            <i class="bi bi-clipboard"></i> Copy
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-success" onclick="downloadResultText(this, 'vigenere_plaintext.txt')">
+            <i class="bi bi-download"></i> Download
+          </button>
+        </div>
       </div>
-      <textarea class="form-control" rows="10" readonly>${data.plaintext}</textarea>
+      <textarea class="form-control result-textarea" rows="10" readonly>${data.plaintext}</textarea>
     `;
   }
 
@@ -902,6 +954,40 @@ function showCopySuccess(button) {
     button.classList.remove("btn-success");
     button.classList.add("btn-outline-primary");
   }, 2000);
+}
+
+// Download result text from dynamically created textareas
+function downloadResultText(button, filename = "output.txt") {
+  const textarea = button.closest(".ajax-results").querySelector("textarea");
+  if (!textarea) {
+    showToast("Không tìm thấy nội dung để tải!", "error");
+    return;
+  }
+
+  const content = textarea.value;
+
+  if (!content.trim()) {
+    showToast("Nội dung trống, không thể tải file!", "warning");
+    return;
+  }
+
+  // Create blob and download
+  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+
+  // Trigger download
+  document.body.appendChild(link);
+  link.click();
+
+  // Cleanup
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+
+  // Show success notification
+  showToast(`Đã tải file: ${filename}`, "success", "Download thành công");
 }
 
 function setupTaskForms() {
