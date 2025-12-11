@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from werkzeug.utils import secure_filename
 import os
+import string
 from dotenv import load_dotenv
 import requests
 import time
@@ -18,6 +19,7 @@ from crypto.charset_filter import validate_and_filter
 
 # Configure Gemini API
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+ALPHABET = string.ascii_lowercase
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = (
@@ -156,16 +158,31 @@ def task2_substitution():
 
     # Gọi hàm crack substitution
     score, mapping_str, plaintext = break_substitution(ciphertext)
-    
-    # Parse mapping_str để lấy plain alphabet
-    # Format: "cipher: abc... | plain : xyz..."
-    plain_alphabet = mapping_str.split(" | plain : ")[-1] if " | plain : " in mapping_str else mapping_str
+
+    # Parse mapping_str để extract plain alphabet ONLY
+    # Format: "cipher: ABC...\nplain : XYZ..."
+    plain_alphabet = ALPHABET.upper()  # default
+    cipher_alphabet = ALPHABET.upper()
+
+    if "\n" in mapping_str:
+        lines = mapping_str.split("\n")
+        for line in lines:
+            line_lower = line.lower().strip()
+            if line_lower.startswith("plain"):
+                # Extract chỉ phần alphabet sau dấu ":"
+                plain_alphabet = line.split(":")[-1].strip().upper()
+            elif line_lower.startswith("cipher"):
+                cipher_alphabet = line.split(":")[-1].strip().upper()
+
+    # Format score rõ ràng hơn
+    score_display = f"{score:.2f}"
 
     return render_template(
         "index.html",
         active_tab="task2",
-        task2_score=score,
-        task2_mapping=plain_alphabet.upper(),  # Uppercase để dễ đọc
+        task2_score=score_display,
+        task2_cipher=cipher_alphabet,  # Cipher alphabet
+        task2_mapping=plain_alphabet,  # Plain alphabet only
         task2_result=warning_msg + plaintext,
     )
 
@@ -561,9 +578,13 @@ def api_task2_substitution():
 
         # Gọi hàm crack substitution
         score, mapping_str, plaintext = break_substitution(ciphertext)
-        
+
         # Parse mapping_str để lấy plain alphabet
-        plain_alphabet = mapping_str.split(" | plain : ")[-1] if " | plain : " in mapping_str else mapping_str
+        plain_alphabet = (
+            mapping_str.split(" | plain : ")[-1]
+            if " | plain : " in mapping_str
+            else mapping_str
+        )
 
         return jsonify(
             {

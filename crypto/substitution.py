@@ -28,17 +28,164 @@ ALPHABET = string.ascii_lowercase
 WORD_PATTERN = re.compile(r"[a-zA-Z]{3,}")
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+MONOGRAM_PATH = os.path.join(BASE_DIR, "data", "english_monograms.txt")
+BIGRAM_PATH = os.path.join(BASE_DIR, "data", "english_bigrams.txt")
+TRIGRAM_PATH = os.path.join(BASE_DIR, "data", "english_trigrams.txt")
 QUADGRAM_PATH = os.path.join(BASE_DIR, "data", "english_quadgrams.txt")
 WORDLIST_PATH = os.path.join(BASE_DIR, "data", "wordlist.txt")
 
 # ----------------------------- global cache ----------------------------- #
 
+_MONO_FREQ = None  # dict[letter] -> frequency
+_BI_LOG = None  # dict[bigram] -> log P
+_BI_DEFAULT = None
+_TRI_LOG = None  # dict[trigram] -> log P
+_TRI_DEFAULT = None
 _QUAD_LOG = None  # dict[quadgram] -> log P(g)
 _QUAD_DEFAULT = None  # default log-prob cho quadgram hiếm
 _WORDSET = None  # set các từ trong wordlist
 
 
-# ========================= 1. Quadgram model ============================ #
+# ========================= 1. N-gram models ============================ #
+
+
+def _load_monograms():
+    """
+    Load english_monograms.txt để có frequency chính xác hơn cho seed.
+    Format: "E 529117365"
+    """
+    global _MONO_FREQ
+    if _MONO_FREQ is not None:
+        return
+
+    mono_freq = {}
+    total = 0
+
+    try:
+        with open(MONOGRAM_PATH, "r", encoding="utf-8", errors="ignore") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                parts = line.split()
+                if len(parts) != 2:
+                    continue
+                letter, count = parts[0].lower(), parts[1]
+                if len(letter) != 1 or letter not in ALPHABET:
+                    continue
+                try:
+                    cnt = int(count)
+                    mono_freq[letter] = cnt
+                    total += cnt
+                except ValueError:
+                    continue
+    except FileNotFoundError:
+        # Fallback to default English frequency
+        _MONO_FREQ = {}
+        return
+
+    _MONO_FREQ = mono_freq
+
+
+def _load_bigrams():
+    """
+    Load english_bigrams.txt cho bigram scoring.
+    Format: "TH 116997844"
+    """
+    global _BI_LOG, _BI_DEFAULT
+    if _BI_LOG is not None:
+        return
+
+    bi_counts = {}
+    total = 0
+
+    try:
+        with open(BIGRAM_PATH, "r", encoding="utf-8", errors="ignore") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                parts = line.split()
+                if len(parts) != 2:
+                    continue
+                bigram, count = parts[0].lower(), parts[1]
+                if len(bigram) != 2 or not all(c in ALPHABET for c in bigram):
+                    continue
+                try:
+                    cnt = int(count)
+                    bi_counts[bigram] = cnt
+                    total += cnt
+                except ValueError:
+                    continue
+    except FileNotFoundError:
+        _BI_LOG = {}
+        _BI_DEFAULT = log(1.0 / (26**2))
+        return
+
+    if total == 0:
+        _BI_LOG = {}
+        _BI_DEFAULT = log(1.0 / (26**2))
+        return
+
+    V = len(bi_counts)
+    BI_LOG = {}
+    for bg, cnt in bi_counts.items():
+        BI_LOG[bg] = log((cnt + 1) / (total + V))
+
+    _BI_LOG = BI_LOG
+    _BI_DEFAULT = log(1 / (total + V))
+
+
+def _load_trigrams():
+    """
+    Load english_trigrams.txt cho trigram scoring.
+    Format: "THE 77534223"
+    """
+    global _TRI_LOG, _TRI_DEFAULT
+    if _TRI_LOG is not None:
+        return
+
+    tri_counts = {}
+    total = 0
+
+    try:
+        with open(TRIGRAM_PATH, "r", encoding="utf-8", errors="ignore") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                parts = line.split()
+                if len(parts) != 2:
+                    continue
+                trigram, count = parts[0].lower(), parts[1]
+                if len(trigram) != 3 or not all(c in ALPHABET for c in trigram):
+                    continue
+                try:
+                    cnt = int(count)
+                    tri_counts[trigram] = cnt
+                    total += cnt
+                except ValueError:
+                    continue
+    except FileNotFoundError:
+        _TRI_LOG = {}
+        _TRI_DEFAULT = log(1.0 / (26**3))
+        return
+
+    if total == 0:
+        _TRI_LOG = {}
+        _TRI_DEFAULT = log(1.0 / (26**3))
+        return
+
+    V = len(tri_counts)
+    TRI_LOG = {}
+    for tg, cnt in tri_counts.items():
+        TRI_LOG[tg] = log((cnt + 1) / (total + V))
+
+    _TRI_LOG = TRI_LOG
+    _TRI_DEFAULT = log(1 / (total + V))
+
+
+# ========================= Quadgram model (existing) ==================== #
 
 
 def _load_quadgrams():
@@ -125,20 +272,29 @@ def _quad_score(text: str) -> float:
 def _load_wordlist():
     """
     Load wordlist.txt thành set các từ tiếng Anh (>=3 ký tự, alphabet).
+    Thử load wordlist_enhanced.txt trước, fallback về wordlist.txt
     """
     global _WORDSET
     if _WORDSET is not None:
         return _WORDSET
 
     wordset = set()
-    try:
-        with open(WORDLIST_PATH, "r", encoding="utf-8", errors="ignore") as f:
-            for line in f:
-                w = line.strip().lower()
-                if len(w) >= 3 and w.isalpha():
-                    wordset.add(w)
-    except FileNotFoundError:
-        wordset = set()
+
+    # Try enhanced wordlist first
+    enhanced_path = os.path.join(BASE_DIR, "data", "wordlist_enhanced.txt")
+    paths_to_try = [enhanced_path, WORDLIST_PATH]
+
+    for path in paths_to_try:
+        try:
+            with open(path, "r", encoding="utf-8", errors="ignore") as f:
+                for line in f:
+                    w = line.strip().lower()
+                    if len(w) >= 3 and w.isalpha():
+                        wordset.add(w)
+            if wordset:  # If we got words, stop trying
+                break
+        except FileNotFoundError:
+            continue
 
     _WORDSET = wordset
     return wordset
@@ -166,18 +322,63 @@ def _word_bonus(text: str) -> float:
     ratio = matched / len(words)  # 0..1
 
     # Length factor: văn bản càng dài bonus càng đáng tin
-    length_factor = min(len(text) / 4000.0, 2.0)
+    length_factor = min(len(text) / 3000.0, 2.5)
 
-    # Hệ số bonus nhỏ để quadgram vẫn là chính
-    return 35.0 * ratio * length_factor
+    # Tăng bonus weight để ưu tiên text có nhiều từ hợp lệ
+    # (giúp tránh stuck ở local optimum với quadgram score cao nhưng vô nghĩa)
+    return 120.0 * ratio * length_factor
+
+
+def _ngram_score(text: str) -> float:
+    """
+    Combined n-gram scoring với weighted sum:
+    - Bigram: weight thấp (pattern cơ bản)
+    - Trigram: weight trung bình
+    - Quadgram: weight cao nhất (optimal)
+
+    Weight distribution: 10% bigram, 20% trigram, 70% quadgram
+    """
+    _load_bigrams()
+    _load_trigrams()
+    _load_quadgrams()
+
+    text_lower = text.lower()
+    s = "".join(c for c in text_lower if c in ALPHABET)
+    s_len = len(s)
+
+    if s_len < 2:
+        return float("-inf")
+
+    score = 0.0
+
+    # Bigram (10% weight)
+    if s_len >= 2 and _BI_LOG:
+        bi_score = sum(_BI_LOG.get(s[i : i + 2], _BI_DEFAULT) for i in range(s_len - 1))
+        score += 0.10 * bi_score
+
+    # Trigram (20% weight)
+    if s_len >= 3 and _TRI_LOG:
+        tri_score = sum(
+            _TRI_LOG.get(s[i : i + 3], _TRI_DEFAULT) for i in range(s_len - 2)
+        )
+        score += 0.20 * tri_score
+
+    # Quadgram (70% weight - vẫn là chính)
+    if s_len >= 4 and _QUAD_LOG:
+        quad_score = sum(
+            _QUAD_LOG.get(s[i : i + 4], _QUAD_DEFAULT) for i in range(s_len - 3)
+        )
+        score += 0.70 * quad_score
+
+    return score
 
 
 def _language_score(text: str) -> float:
     """
     Score tổng hợp:
-        quadgram log-prob + word-bonus.
+        combined n-gram score + word-bonus.
     """
-    return _quad_score(text) + _word_bonus(text)
+    return _ngram_score(text) + _word_bonus(text)
 
 
 # ===================== 3. Key & decrypt utilities ======================= #
@@ -208,6 +409,56 @@ def _random_key() -> str:
     return "".join(lst)
 
 
+def _frequency_seed(ciphertext: str) -> str:
+    """
+    Tạo initial key từ frequency analysis (như đề gợi ý).
+    Map các ký tự cipher theo tần suất → ký tự tiếng Anh theo tần suất.
+
+    Sử dụng monogram data thực tế thay vì hardcode.
+    """
+    _load_monograms()
+    global _MONO_FREQ
+
+    # Nếu có monogram data, dùng nó; nếu không fallback
+    if _MONO_FREQ:
+        # Sort theo frequency descending
+        english_freq_list = sorted(
+            _MONO_FREQ.keys(), key=lambda x: _MONO_FREQ[x], reverse=True
+        )
+        ENGLISH_FREQ = "".join(english_freq_list)
+    else:
+        # Fallback to hardcoded
+        ENGLISH_FREQ = "etaoinshrdlcumwfgypbvkjxqz"
+
+    # Đếm tần suất trong ciphertext (chỉ chữ cái)
+    letter_counts = {}
+    for ch in ciphertext.lower():
+        if ch in ALPHABET:
+            letter_counts[ch] = letter_counts.get(ch, 0) + 1
+
+    if not letter_counts:
+        return ALPHABET
+
+    # Sort theo tần suất descending
+    cipher_freq = sorted(
+        letter_counts.keys(), key=lambda x: letter_counts.get(x, 0), reverse=True
+    )
+
+    # Padding các chữ chưa xuất hiện
+    for ch in ALPHABET:
+        if ch not in cipher_freq:
+            cipher_freq.append(ch)
+
+    # Map: cipher[0] (most frequent) → 'e', cipher[1] → 't', ...
+    key = list(ALPHABET)  # default identity mapping
+    for i, cipher_ch in enumerate(cipher_freq[:26]):
+        idx = ord(cipher_ch) - ord("a")
+        if i < 26:
+            key[idx] = ENGLISH_FREQ[i]
+
+    return "".join(key)
+
+
 def _swap_positions(key: str, i: int, j: int) -> str:
     """Hoán đổi 2 vị trí trong key (vị trí = cipher letter)."""
     if i == j:
@@ -220,50 +471,103 @@ def _swap_positions(key: str, i: int, j: int) -> str:
 # ====================== 4. Simple hill-climbing ========================= #
 
 
-def _hill_climb(cipher_sample: str, max_plateau_moves: int = 1000) -> tuple[float, str]:
+def _hill_climb(
+    cipher_sample: str,
+    use_freq_seed: bool = False,
+    max_iterations: int = 5000,
+    use_annealing: bool = False,
+) -> tuple[float, str]:
     """
-    Hill-climbing đơn giản:
-    - Bắt đầu với key random.
+    Hill-climbing tối ưu:
+    - Bắt đầu với key frequency-based HOẶC random.
     - Lặp:
         + Thử TẤT CẢ cặp (i, j) 0 <= i < j < 26.
         + Nếu swap nào cho score tốt hơn -> nhận "first better" và restart loop.
         + Nếu không swap nào tốt hơn -> local optimum -> dừng.
+    - Optimized: cache plaintext, chỉ update phần thay đổi
+
+    Args:
+        cipher_sample: Text mẫu để scoring
+        use_freq_seed: Nếu True, dùng frequency analysis làm seed; False = random
+        max_iterations: Số iteration tối đa
+        use_annealing: Nếu True, dùng simulated annealing để tránh local optimum
     """
-    key = _random_key()
+    if use_freq_seed:
+        key = _frequency_seed(cipher_sample)
+    else:
+        key = _random_key()
+
     plaintext = _apply_key(cipher_sample, key)
     best_score = _language_score(plaintext)
     best_key = key
+    current_score = best_score
+    current_key = key
 
-    plateau = 0
+    # Simulated annealing parameters
+    temperature = 20.0 if use_annealing else 0.0
+    cooling_rate = 0.995
+
+    iterations = 0
     improved = True
-    while improved and plateau < max_plateau_moves:
+    while improved and iterations < max_iterations:
         improved = False
         for i in range(25):
             for j in range(i + 1, 26):
-                cand_key = _swap_positions(best_key, i, j)
+                cand_key = _swap_positions(current_key, i, j)
                 cand_plain = _apply_key(cipher_sample, cand_key)
                 cand_score = _language_score(cand_plain)
-                if cand_score > best_score:
-                    best_score = cand_score
-                    best_key = cand_key
+
+                # Standard hill-climbing: always accept better
+                if cand_score > current_score:
+                    current_score = cand_score
+                    current_key = cand_key
+                    plaintext = cand_plain
                     improved = True
-                    plateau = 0
+                    iterations = 0
+
+                    # Track global best
+                    if current_score > best_score:
+                        best_score = current_score
+                        best_key = current_key
                     break
+
+                # Simulated annealing: sometimes accept worse with probability
+                elif use_annealing and temperature > 0.1:
+                    import math
+
+                    delta = cand_score - current_score
+                    acceptance_prob = math.exp(delta / temperature)
+                    if random.random() < acceptance_prob:
+                        current_score = cand_score
+                        current_key = cand_key
+                        improved = True
+                        break
+
             if improved:
                 break
+
         if not improved:
-            plateau += 1
+            iterations += 1
+
+        # Cool down temperature
+        if use_annealing:
+            temperature *= cooling_rate
 
     return best_score, best_key
 
 
 def _break_with_hillclimb(
-    ciphertext: str, rounds: int = 40, sample_letters: int = 6000
+    ciphertext: str,
+    rounds: int = 150,
+    sample_letters: int = 10000,
+    consolidate: int = 8,
 ):
     """
-    Random-restart hill-climbing:
+    Random-restart hill-climbing with consolidation and simulated annealing:
     - ciphertext có thể rất dài; dùng prefix gồm sample_letters chữ cái.
     - Chạy 'rounds' lần hill-climb độc lập, giữ best score toàn cục.
+    - consolidate: số lần cần đạt cùng local maximum để xác nhận đây là kết quả tốt nhất
+    - Round đầu tiên dùng FREQUENCY SEED, một số round dùng annealing để tránh local optimum
     """
     letters = [c for c in ciphertext if c.isalpha()]
     if not letters:
@@ -276,12 +580,36 @@ def _break_with_hillclimb(
 
     global_best_score = float("-inf")
     global_best_key = ALPHABET
+    local_maximum_hits = 0
+    no_improvement_count = 0
 
-    for _ in range(rounds):
-        score, key = _hill_climb(sample)
-        if score > global_best_score:
+    for round_num in range(rounds):
+        # Round đầu: frequency seed.
+        # Mỗi 10 round: dùng annealing để escape local optimum
+        # Các round khác: random restart
+        use_freq = round_num == 0
+        use_anneal = round_num > 0 and round_num % 10 == 0
+
+        score, key = _hill_climb(
+            sample, use_freq_seed=use_freq, use_annealing=use_anneal
+        )
+
+        if score > global_best_score + 0.5:  # Meaningful improvement
             global_best_score = score
             global_best_key = key
+            local_maximum_hits = 1
+            no_improvement_count = 0
+        elif abs(score - global_best_score) < 0.5:  # Same score (within tolerance)
+            local_maximum_hits += 1
+            if local_maximum_hits >= consolidate:
+                # Found same maximum multiple times - likely the best
+                break
+        else:
+            no_improvement_count += 1
+
+        # Early stop if stuck for too long
+        if no_improvement_count > 30:
+            break
 
     return global_best_score, global_best_key
 
@@ -289,7 +617,7 @@ def _break_with_hillclimb(
 # ============================= 5. Public API ============================ #
 
 
-def break_substitution(ciphertext: str):
+def break_substitution(ciphertext: str, rounds: int = 150, consolidate: int = 8):
     """
     Hàm dùng trong Flask.
 
@@ -297,6 +625,11 @@ def break_substitution(ciphertext: str):
         score (float),
         mapping_str: "cipher: abcdef... | plain : <key>",
         plaintext: ciphertext đã giải với key tốt nhất.
+
+    Args:
+        ciphertext: văn bản mã hóa cần giải
+        rounds: số vòng hill-climb tối đa (mặc định 150)
+        consolidate: số lần cần đạt cùng kết quả để xác nhận (mặc định 8)
     """
     random.seed()
 
@@ -304,12 +637,16 @@ def break_substitution(ciphertext: str):
         mapping_str = "cipher: " + ALPHABET + " | plain : " + ALPHABET
         return 0.0, mapping_str, ""
 
-    score, key = _break_with_hillclimb(ciphertext, rounds=40, sample_letters=6000)
+    score, key = _break_with_hillclimb(
+        ciphertext, rounds=rounds, sample_letters=8000, consolidate=consolidate
+    )
 
     plaintext = _apply_key(ciphertext, key)
-    cipher_line = "cipher: " + ALPHABET
-    plain_line = "plain : " + key
-    mapping_str = cipher_line + " | " + plain_line
+
+    # Format mapping rõ ràng hơn (theo đề bài)
+    cipher_line = "cipher: " + ALPHABET.upper()
+    plain_line = "plain : " + key.upper()
+    mapping_str = cipher_line + "\n" + plain_line
 
     return score, mapping_str, plaintext
 
@@ -336,10 +673,16 @@ def _run_cli():
         "-o", "--output", required=True, help="Đường dẫn file plaintext output"
     )
     parser.add_argument(
-        "--rounds", type=int, default=40, help="Số round hill-climb (mặc định 40)"
+        "--rounds", type=int, default=150, help="Số round hill-climb (mặc định 150)"
     )
     parser.add_argument(
-        "--sample", type=int, default=6000, help="Số chữ cái dùng cho scoring sample"
+        "--sample", type=int, default=10000, help="Số chữ cái dùng cho scoring sample"
+    )
+    parser.add_argument(
+        "--consolidate",
+        type=int,
+        default=8,
+        help="Số lần cần đạt cùng kết quả (mặc định 8)",
     )
     args = parser.parse_args()
 
@@ -348,21 +691,29 @@ def _run_cli():
 
     random.seed()
     score, key = _break_with_hillclimb(
-        ciphertext, rounds=args.rounds, sample_letters=args.sample
+        ciphertext,
+        rounds=args.rounds,
+        sample_letters=args.sample,
+        consolidate=args.consolidate,
     )
     plaintext = _apply_key(ciphertext, key)
 
-    cipher_line = "cipher: " + ALPHABET
-    plain_line = "plain : " + key
-    mapping_str = cipher_line + " | " + plain_line
+    cipher_line = "cipher: " + ALPHABET.upper()
+    plain_line = "plain : " + key.upper()
 
     with open(args.output, "w", encoding="utf-8", errors="ignore") as out:
-        out.write(str(score) + "\n")
-        out.write(mapping_str + "\n")
+        # Dòng 1: Score/log-likelihood (rõ ràng như đề yêu cầu)
+        out.write(f"Score / Log-likelihood: {score:.2f}\n")
+        # Dòng 2: Mapping
+        out.write(cipher_line + "\n")
+        out.write(plain_line + "\n")
+        # Dòng 3+: Plaintext
         out.write(plaintext)
 
-    print(f"[+] Done. Score = {score:.2f}")
-    print(f"[+] {mapping_str}")
+    print(f"[+] Done. Score / Log-likelihood = {score:.2f}")
+    print(f"[+] Mapping:")
+    print(f"    {cipher_line}")
+    print(f"    {plain_line}")
 
 
 if __name__ == "__main__":

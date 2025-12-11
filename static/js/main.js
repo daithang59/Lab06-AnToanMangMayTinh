@@ -373,11 +373,14 @@ function downloadTextFile(elementId, filename = "output.txt") {
 // Helper function to copy plain text (for AJAX results)
 function copyText(text, button) {
   if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(text).then(() => {
-      showCopyFeedback(button);
-    }).catch(err => {
-      console.error("Copy failed:", err);
-    });
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        showCopyFeedback(button);
+      })
+      .catch((err) => {
+        console.error("Copy failed:", err);
+      });
   } else {
     // Fallback
     const textarea = document.createElement("textarea");
@@ -396,12 +399,12 @@ function showCopyFeedback(button) {
   const originalHTML = button.innerHTML;
   button.innerHTML = '<i class="bi bi-check"></i>';
   button.classList.add("btn-success");
-  
+
   setTimeout(() => {
     button.innerHTML = originalHTML;
     button.classList.remove("btn-success");
   }, 1500);
-  
+
   showToast("Đã copy!", "success");
 }
 
@@ -602,7 +605,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       showLoading(
         `Đang xử lý ${taskLabels[taskName] || ""}...`,
-        "Vui lòng đợi, quá trình này có thể mất vài giây"
+        "Vui lòng đợi, quá trình này có thể mất vài phút"
       );
 
       // Add loading class to button
