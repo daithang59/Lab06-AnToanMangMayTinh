@@ -692,23 +692,6 @@ Plain : {{ task2_mapping }}</textarea
                     enctype="multipart/form-data"
                     id="task4-form"
                   >
-                    <!-- Format Information Alert -->
-                    <div class="alert alert-info" role="alert">
-                      <h6 class="alert-heading">
-                        <i class="bi bi-info-circle-fill"></i> 📖 Định dạng
-                        Input/Output
-                      </h6>
-                      <small>
-                        <strong>Encrypt:</strong> Input = plaintext (UTF-8) →
-                        Output = ciphertext (hex)<br />
-                        <strong>Decrypt:</strong> Input = ciphertext (hex) →
-                        Output = plaintext (UTF-8)<br />
-                        <strong>Mặc định:</strong> Ciphertext sử dụng
-                        <strong>Hexadecimal format</strong> (backend cũng hỗ trợ
-                        Base64)
-                      </small>
-                    </div>
-
                     <!-- Action Selection -->
                     <div class="mb-4">
                       <label class="form-label fw-semibold">Chọn chế độ</label>
@@ -966,24 +949,6 @@ Plain : {{ task2_mapping }}</textarea
                     action="{{ url_for('task5_aes') }}"
                     enctype="multipart/form-data"
                   >
-                    <!-- Format Information Alert -->
-                    <div class="alert alert-info" role="alert">
-                      <h6 class="alert-heading">
-                        <i class="bi bi-info-circle-fill"></i> 📖 Định dạng
-                        Input/Output
-                      </h6>
-                      <small>
-                        <strong>Encrypt:</strong> Input = plaintext (UTF-8) →
-                        Output = ciphertext (hex)<br />
-                        <strong>Decrypt:</strong> Input = ciphertext (hex) →
-                        Output = plaintext (UTF-8)<br />
-                        <strong>Mặc định:</strong> AES-128 với
-                        <strong>Hexadecimal format</strong>. Backend hỗ trợ
-                        AES-192/256 và Base64.<br />
-                        <strong>Padding:</strong> PKCS#7 (tự động xử lý)
-                      </small>
-                    </div>
-
                     <!-- Action Selection -->
                     <div class="mb-4">
                       <label class="form-label fw-semibold">Chọn chế độ</label>
