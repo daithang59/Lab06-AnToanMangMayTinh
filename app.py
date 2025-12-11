@@ -29,7 +29,7 @@ app.config["TEMPLATES_AUTO_RELOAD"] = True
 app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
 
 # File upload configuration
-MAX_CONTENT_LENGTH = 10000  # 10000 characters
+MAX_CONTENT_LENGTH = 15000  # 15000 characters
 ALLOWED_EXTENSIONS = {"txt"}
 
 

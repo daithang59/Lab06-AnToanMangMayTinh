@@ -101,7 +101,7 @@ function validateFile(fileInput) {
   if (!file) return { valid: false, message: "" };
 
   const allowedExtensions = ["txt"];
-  const maxSize = 10000; // 10000 characters
+  const maxSize = 15000; // 15000 characters
 
   // Check extension
   const fileName = file.name.toLowerCase();
@@ -160,7 +160,7 @@ function showFileValidation(fileInput, isValid, message) {
 // CHARACTER COUNTER
 // ========================================
 function updateCharCounter(textarea) {
-  const maxLength = 10000;
+  const maxLength = 15000;
   const currentLength = textarea.value.length;
   const wrapper = textarea.closest(".mb-3");
 
@@ -584,11 +584,11 @@ document.addEventListener("DOMContentLoaded", () => {
       let hasError = false;
 
       textareas.forEach((ta) => {
-        if (ta.value.length > 10000) {
+        if (ta.value.length > 15000) {
           e.preventDefault();
           hasError = true;
           showToast(
-            "Vui lòng giảm độ dài văn bản xuống dưới 10,000 ký tự",
+            "Vui lòng giảm độ dài văn bản xuống dưới 15,000 ký tự",
             "error",
             "Không thể submit"
           );
