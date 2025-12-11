@@ -126,7 +126,7 @@ def _index_of_coincidence(seq: str) -> float:
     return numerator / (N * (N - 1))
 
 
-def _guess_key_lengths_by_ic(letters: str, max_key_len: int = 20, top_k: int = 7):
+def _guess_key_lengths_by_ic(letters: str, max_key_len: int = 30, top_k: int = 10):
     """
     Dùng Index of Coincidence để ước lượng các độ dài khóa tiềm năng.
 
@@ -226,7 +226,7 @@ def _chi_square_text(text: str) -> float:
 # ========================== 5. Solver chính ============================== #
 
 
-def _break_vigenere_internal(ciphertext: str, max_key_len: int = 20, top_k: int = 7):
+def _break_vigenere_internal(ciphertext: str, max_key_len: int = 30, top_k: int = 10):
     """
     Solver chinh:
     - Lay chuoi letters = chi cac chu cai A-Z tu ciphertext.
@@ -281,7 +281,7 @@ def break_vigenere(ciphertext: str):
         score (float): chi-square (càng nhỏ càng giống tiếng Anh).
     """
     random.seed()
-    return _break_vigenere_internal(ciphertext, max_key_len=20, top_k=7)
+    return _break_vigenere_internal(ciphertext, max_key_len=30, top_k=10)
 
 
 # ========================= Utility functions ============================= #
