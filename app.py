@@ -160,19 +160,28 @@ def task2_substitution():
     score, mapping_str, plaintext = break_substitution(ciphertext)
 
     # Parse mapping_str để extract plain alphabet ONLY
-    # Format: "cipher: ABC...\nplain : XYZ..."
+    # Format: "CIPHER: ABC... | PLAIN : XYZ..."
     plain_alphabet = ALPHABET.upper()  # default
     cipher_alphabet = ALPHABET.upper()
 
-    if "\n" in mapping_str:
-        lines = mapping_str.split("\n")
-        for line in lines:
-            line_lower = line.lower().strip()
-            if line_lower.startswith("plain"):
+    # Debug logging
+    print(f"DEBUG - mapping_str: {mapping_str}")
+    print(f"DEBUG - Contains pipe: {'|' in mapping_str}")
+
+    if "|" in mapping_str:
+        # Split by pipe
+        parts = mapping_str.split("|")
+        print(f"DEBUG - Parts: {parts}")
+        for part in parts:
+            part_lower = part.lower().strip()
+            print(f"DEBUG - Part lower: {part_lower}")
+            if part_lower.startswith("plain"):
                 # Extract chỉ phần alphabet sau dấu ":"
-                plain_alphabet = line.split(":")[-1].strip().upper()
-            elif line_lower.startswith("cipher"):
-                cipher_alphabet = line.split(":")[-1].strip().upper()
+                plain_alphabet = part.split(":")[-1].strip().upper()
+                print(f"DEBUG - Plain alphabet: {plain_alphabet}")
+            elif part_lower.startswith("cipher"):
+                cipher_alphabet = part.split(":")[-1].strip().upper()
+                print(f"DEBUG - Cipher alphabet: {cipher_alphabet}")
 
     # Format score rõ ràng hơn
     score_display = f"{score:.2f}"
@@ -580,11 +589,13 @@ def api_task2_substitution():
         score, mapping_str, plaintext = break_substitution(ciphertext)
 
         # Parse mapping_str để lấy plain alphabet
-        plain_alphabet = (
-            mapping_str.split(" | plain : ")[-1]
-            if " | plain : " in mapping_str
-            else mapping_str
-        )
+        # Format: "CIPHER: ABC... | PLAIN : XYZ..."
+        plain_alphabet = mapping_str  # default
+
+        if " | PLAIN : " in mapping_str:
+            plain_alphabet = mapping_str.split(" | PLAIN : ")[-1].strip()
+        elif " | plain : " in mapping_str:
+            plain_alphabet = mapping_str.split(" | plain : ")[-1].strip()
 
         return jsonify(
             {
