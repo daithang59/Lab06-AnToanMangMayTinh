@@ -808,54 +808,85 @@ Plain : {{ task2_mapping }}</textarea
                       </div>
 
                       <div class="col-md-6 mb-3">
-                        <label class="form-label fw-semibold"
-                          >Key (hex, 16 chars)
-                          <i
-                            class="bi bi-info-circle"
-                            data-bs-toggle="tooltip"
-                            data-bs-placement="top"
-                            title="DES sử dụng khóa 8 bytes (64 bit). Nhập 16 ký tự hex (0-9, A-F). Ví dụ: 0123456789ABCDEF"
-                          ></i>
-                        </label>
-                        <input
-                          type="text"
-                          name="key"
-                          class="form-control"
-                          placeholder="0123456789ABCDEF"
-                          required
-                        />
-                        <div class="form-text">
-                          🔑 <strong>DES Key:</strong> 8 bytes = 16 hex chars.
-                          Chỉ chấp nhận 0-9, A-F (case-insensitive). <br />💡
-                          <em>Mặc định output format: Hexadecimal</em>
+                        <label class="form-label fw-semibold">Key Format</label>
+                        <div class="selection-card-group">
+                          <div class="selection-card">
+                            <input
+                              type="radio"
+                              name="key_format"
+                              value="hex"
+                              id="task4-key-hex"
+                              checked
+                            />
+                            <label for="task4-key-hex">
+                              <i class="bi bi-hash"></i>
+                              <span>Hex</span>
+                            </label>
+                          </div>
+                          <div class="selection-card">
+                            <input
+                              type="radio"
+                              name="key_format"
+                              value="plaintext"
+                              id="task4-key-plaintext"
+                            />
+                            <label for="task4-key-plaintext">
+                              <i class="bi bi-fonts"></i>
+                              <span>Plaintext</span>
+                            </label>
+                          </div>
                         </div>
+                      </div>
+                    </div>
+
+                    <div class="mb-3">
+                      <label class="form-label fw-semibold"
+                        >Key
+                        <i
+                          class="bi bi-info-circle"
+                          data-bs-toggle="tooltip"
+                          data-bs-placement="top"
+                          title="DES sử dụng khóa 8 bytes (64 bit). Chọn Hex: nhập 16 ký tự hex. Chọn Plaintext: nhập 8 ký tự ASCII."
+                        ></i>
+                      </label>
+                      <input
+                        type="text"
+                        name="key"
+                        id="task4-key-input"
+                        class="form-control"
+                        placeholder="0123456789ABCDEF"
+                        required
+                      />
+                      <div class="form-text" id="task4-key-hint">
+                        🔑 <strong>DES Key:</strong> 8 bytes = 16 hex chars. Chỉ
+                        chấp nhận 0-9, A-F (case-insensitive). <br />💡
+                        <em>Mặc định output format: Hexadecimal</em>
                       </div>
                     </div>
 
                     <!-- IV for CBC -->
                     <div class="mb-3">
                       <label class="form-label fw-semibold"
-                        >IV (hex, 16 chars - chỉ cho CBC)
+                        >IV (hex, 16 chars - bắt buộc cho CBC)
                         <i
                           class="bi bi-info-circle"
                           data-bs-toggle="tooltip"
                           data-bs-placement="top"
-                          title="Initialization Vector cho CBC mode. ECB không cần IV. CBC encrypt có thể để trống (auto-generate), CBC decrypt phải nhập."
+                          title="Initialization Vector cho CBC mode. ECB không cần IV. CBC mode BẮT BUỘC phải nhập IV (16 ký tự hex)."
                         ></i>
                       </label>
                       <input
                         type="text"
                         name="iv"
                         class="form-control"
-                        placeholder="Để trống nếu dùng ECB hoặc tự sinh IV"
+                        placeholder="Nhập IV (16 hex chars) cho CBC mode"
                       />
                       <div class="form-text">
                         🔐 <strong>IV:</strong> 8 bytes = 16 hex chars cho DES.
                         <br />• <strong>ECB mode:</strong> Không cần IV (để
-                        trống) <br />• <strong>CBC Encrypt:</strong> Để trống sẽ
-                        tự động sinh IV ngẫu nhiên <br />•
-                        <strong>CBC Decrypt:</strong> Bắt buộc nhập IV từ lúc
-                        encrypt
+                        trống) <br />• <strong>CBC mode:</strong> BẮT BUỘC nhập
+                        IV 16 ký tự hex (8 bytes) <br />💡
+                        <em>Ví dụ: 0123456789ABCDEF</em>
                       </div>
                     </div>
 
@@ -1082,54 +1113,84 @@ Plain : {{ task2_mapping }}</textarea
                       </div>
 
                       <div class="col-md-4 mb-3">
-                        <label class="form-label fw-semibold"
-                          >Key (hex)
-                          <i
-                            class="bi bi-info-circle"
-                            data-bs-toggle="tooltip"
-                            data-bs-placement="top"
-                            title="Độ dài key phụ thuộc vào AES key size đã chọn: 128-bit=32 hex, 192-bit=48 hex, 256-bit=64 hex"
-                          ></i>
-                        </label>
-                        <input
-                          type="text"
-                          name="key"
-                          id="task5-key-input"
-                          class="form-control"
-                          placeholder="2B7E151628AED2A6ABF7158809CF4F3C"
-                          required
-                        />
-                        <div class="form-text" id="task5-key-hint">
-                          🔑 <strong>AES-128:</strong> 32 hex chars (16 bytes)
+                        <label class="form-label fw-semibold">Key Format</label>
+                        <div class="selection-card-group">
+                          <div class="selection-card">
+                            <input
+                              type="radio"
+                              name="key_format"
+                              value="hex"
+                              id="task5-key-hex"
+                              checked
+                            />
+                            <label for="task5-key-hex">
+                              <i class="bi bi-hash"></i>
+                              <span>Hex</span>
+                            </label>
+                          </div>
+                          <div class="selection-card">
+                            <input
+                              type="radio"
+                              name="key_format"
+                              value="plaintext"
+                              id="task5-key-plaintext"
+                            />
+                            <label for="task5-key-plaintext">
+                              <i class="bi bi-fonts"></i>
+                              <span>Plaintext</span>
+                            </label>
+                          </div>
                         </div>
+                      </div>
+                    </div>
+
+                    <div class="mb-3">
+                      <label class="form-label fw-semibold"
+                        >Key
+                        <i
+                          class="bi bi-info-circle"
+                          data-bs-toggle="tooltip"
+                          data-bs-placement="top"
+                          title="Độ dài key phụ thuộc vào AES key size. Chọn Hex: nhập hex chars. Chọn Plaintext: nhập text ASCII."
+                        ></i>
+                      </label>
+                      <input
+                        type="text"
+                        name="key"
+                        id="task5-key-input"
+                        class="form-control"
+                        placeholder="2B7E151628AED2A6ABF7158809CF4F3C"
+                        required
+                      />
+                      <div class="form-text" id="task5-key-hint">
+                        🔑 <strong>AES-128:</strong> 32 hex chars (16 bytes)
                       </div>
                     </div>
 
                     <!-- IV for CBC -->
                     <div class="mb-3">
                       <label class="form-label fw-semibold"
-                        >IV (hex, 32 chars - chỉ cho CBC)
+                        >IV (hex, 32 chars - bắt buộc cho CBC)
                         <i
                           class="bi bi-info-circle"
                           data-bs-toggle="tooltip"
                           data-bs-placement="top"
-                          title="Initialization Vector cho CBC mode. Phải bằng block size (16 bytes = 32 hex). ECB không dùng IV."
+                          title="Initialization Vector cho CBC mode. CBC mode BẮT BUỘC phải nhập IV (32 ký tự hex = 16 bytes). ECB không dùng IV."
                         ></i>
                       </label>
                       <input
                         type="text"
                         name="iv"
                         class="form-control"
-                        placeholder="Để trống nếu dùng ECB hoặc tự sinh IV"
+                        placeholder="Nhập IV (32 hex chars) cho CBC mode"
                       />
                       <div class="form-text">
                         🔐 <strong>IV:</strong> 16 bytes = 32 hex chars cho AES
                         (block size 128-bit). <br />•
                         <strong>ECB mode:</strong> Không cần IV (để trống)
-                        <br />• <strong>CBC Encrypt:</strong> Để trống sẽ tự
-                        động sinh IV ngẫu nhiên <br />•
-                        <strong>CBC Decrypt:</strong> Bắt buộc nhập IV từ lúc
-                        encrypt
+                        <br />• <strong>CBC mode:</strong> BẮT BUỘC nhập IV 32
+                        ký tự hex (16 bytes) <br />💡
+                        <em>Ví dụ: 000102030405060708090A0B0C0D0E0F</em>
                       </div>
                     </div>
 

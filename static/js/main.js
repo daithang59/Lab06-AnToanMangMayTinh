@@ -509,6 +509,10 @@ document.addEventListener("DOMContentLoaded", () => {
   // Thiết lập tab thủ công
   setupManualTabs();
 
+  // Setup Key Format Selector for Task 4 & 5
+  setupKeyFormatSelector("task4");
+  setupKeyFormatSelector("task5");
+
   // Setup AES key size selector
   setupAESKeySizeSelector();
 
@@ -1193,6 +1197,87 @@ function setupTaskForm(taskId) {
 }
 
 // ========================================
+// KEY FORMAT SELECTOR (Task 4 & 5)
+// ========================================
+function setupKeyFormatSelector(taskId) {
+  const form = document.getElementById(`${taskId}-form`);
+  if (!form) return;
+
+  const hexRadio = form.querySelector(`input[value="hex"][name="key_format"]`);
+  const plaintextRadio = form.querySelector(
+    `input[value="plaintext"][name="key_format"]`
+  );
+  const keyInput = form.querySelector('input[name="key"]');
+  const keyHint = document.getElementById(`${taskId}-key-hint`);
+
+  if (!hexRadio || !plaintextRadio || !keyInput || !keyHint) return;
+
+  function updateKeyFormat() {
+    const isPlaintext = plaintextRadio.checked;
+
+    if (taskId === "task4") {
+      // DES key
+      if (isPlaintext) {
+        keyInput.placeholder = "MYSECRET";
+        keyHint.innerHTML =
+          "🔑 <strong>DES Key:</strong> 8 ký tự ASCII (8 bytes). Ví dụ: MYSECRET";
+      } else {
+        keyInput.placeholder = "0123456789ABCDEF";
+        keyHint.innerHTML =
+          "🔑 <strong>DES Key:</strong> 8 bytes = 16 hex chars. Chỉ chấp nhận 0-9, A-F (case-insensitive). <br />💡 <em>Mặc định output format: Hexadecimal</em>";
+      }
+    } else if (taskId === "task5") {
+      // AES key - need to check key size
+      const keySizeSelect = document.getElementById("task5-key-size");
+      const keySize = keySizeSelect ? keySizeSelect.value : "128";
+
+      const configs = {
+        128: {
+          hexPlaceholder: "2B7E151628AED2A6ABF7158809CF4F3C",
+          textPlaceholder: "MySuperSecretKey",
+          hexHint: "🔑 <strong>AES-128:</strong> 32 hex chars (16 bytes)",
+          textHint: "🔑 <strong>AES-128:</strong> 16 ký tự ASCII (16 bytes)",
+        },
+        192: {
+          hexPlaceholder: "8E73B0F7DA0E6452C810F32B809079E562F8EAD2522C6B7B",
+          textPlaceholder: "MySuperSecretKey24bytes!",
+          hexHint: "🔑 <strong>AES-192:</strong> 48 hex chars (24 bytes)",
+          textHint: "🔑 <strong>AES-192:</strong> 24 ký tự ASCII (24 bytes)",
+        },
+        256: {
+          hexPlaceholder:
+            "603DEB1015CA71BE2B73AEF0857D77811F352C073B6108D72D9810A30914DFF4",
+          textPlaceholder: "MySuperSecretKey32bytesLong!!",
+          hexHint: "🔑 <strong>AES-256:</strong> 64 hex chars (32 bytes)",
+          textHint: "🔑 <strong>AES-256:</strong> 32 ký tự ASCII (32 bytes)",
+        },
+      };
+
+      const config = configs[keySize];
+      if (config) {
+        if (isPlaintext) {
+          keyInput.placeholder = config.textPlaceholder;
+          keyHint.innerHTML = config.textHint;
+        } else {
+          keyInput.placeholder = config.hexPlaceholder;
+          keyHint.innerHTML = config.hexHint;
+        }
+      }
+    }
+
+    // Clear validation state
+    keyInput.classList.remove("is-valid", "is-invalid");
+    const feedback = keyInput.parentElement.querySelector(".invalid-feedback");
+    if (feedback) feedback.remove();
+  }
+
+  hexRadio.addEventListener("change", updateKeyFormat);
+  plaintextRadio.addEventListener("change", updateKeyFormat);
+
+  updateKeyFormat(); // Initial update
+}
+
+// ========================================
 // AES KEY SIZE SELECTOR (Task 5)
 // ========================================
 function setupAESKeySizeSelector() {
@@ -1203,34 +1288,16 @@ function setupAESKeySizeSelector() {
   if (!keySizeSelect || !keyInput || !keyHint) return;
 
   function updateKeyPlaceholder() {
-    const keySize = keySizeSelect.value;
-
-    const configs = {
-      128: {
-        length: 32,
-        bytes: 16,
-        placeholder: "2B7E151628AED2A6ABF7158809CF4F3C",
-        hint: "🔑 <strong>AES-128:</strong> 32 hex chars (16 bytes)",
-      },
-      192: {
-        length: 48,
-        bytes: 24,
-        placeholder: "8E73B0F7DA0E6452C810F32B809079E562F8EAD2522C6B7B",
-        hint: "🔑 <strong>AES-192:</strong> 48 hex chars (24 bytes)",
-      },
-      256: {
-        length: 64,
-        bytes: 32,
-        placeholder:
-          "603DEB1015CA71BE2B73AEF0857D77811F352C073B6108D72D9810A30914DFF4",
-        hint: "🔑 <strong>AES-256:</strong> 64 hex chars (32 bytes)",
-      },
-    };
-
-    const config = configs[keySize];
-    if (config) {
-      keyInput.placeholder = config.placeholder;
-      keyHint.innerHTML = config.hint;
+    // This will be handled by setupKeyFormatSelector
+    // Just trigger the format update
+    const form = document.getElementById("task5-form");
+    if (form) {
+      const formatRadios = form.querySelectorAll('input[name="key_format"]');
+      formatRadios.forEach((radio) => {
+        if (radio.checked) {
+          radio.dispatchEvent(new Event("change"));
+        }
+      });
     }
   }
 
@@ -1291,7 +1358,18 @@ function setupKeyIVValidation() {
 
     if (keyInput) {
       keyInput.addEventListener("input", () => {
-        validateHexInput(keyInput, 16, "DES Key");
+        const keyFormat =
+          task4Form.querySelector('input[name="key_format"]:checked')?.value ||
+          "hex";
+        if (keyFormat === "hex") {
+          validateHexInput(keyInput, 16, "DES Key");
+        } else {
+          // For plaintext, just check length
+          keyInput.classList.remove("is-valid", "is-invalid");
+          const feedback =
+            keyInput.parentElement.querySelector(".invalid-feedback");
+          if (feedback) feedback.remove();
+        }
       });
     }
 
@@ -1314,7 +1392,13 @@ function setupKeyIVValidation() {
       let isValid = true;
 
       if (keyInput) {
-        isValid = validateHexInput(keyInput, 16, "DES Key") && isValid;
+        const keyFormat =
+          task4Form.querySelector('input[name="key_format"]:checked')?.value ||
+          "hex";
+        if (keyFormat === "hex") {
+          isValid = validateHexInput(keyInput, 16, "DES Key") && isValid;
+        }
+        // Plaintext validation is handled server-side
       }
 
       const mode = task4Form.querySelector('select[name="mode"]').value;
@@ -1342,10 +1426,21 @@ function setupKeyIVValidation() {
 
     if (keyInput && keySizeSelect) {
       keyInput.addEventListener("input", () => {
-        const keySize = keySizeSelect.value;
-        const expectedLength =
-          keySize === "128" ? 32 : keySize === "192" ? 48 : 64;
-        validateHexInput(keyInput, expectedLength, `AES-${keySize} Key`);
+        const keyFormat =
+          task5Form.querySelector('input[name="key_format"]:checked')?.value ||
+          "hex";
+        if (keyFormat === "hex") {
+          const keySize = keySizeSelect.value;
+          const expectedLength =
+            keySize === "128" ? 32 : keySize === "192" ? 48 : 64;
+          validateHexInput(keyInput, expectedLength, `AES-${keySize} Key`);
+        } else {
+          // For plaintext, just clear validation
+          keyInput.classList.remove("is-valid", "is-invalid");
+          const feedback =
+            keyInput.parentElement.querySelector(".invalid-feedback");
+          if (feedback) feedback.remove();
+        }
       });
     }
 
@@ -1368,12 +1463,18 @@ function setupKeyIVValidation() {
       let isValid = true;
 
       if (keyInput && keySizeSelect) {
-        const keySize = keySizeSelect.value;
-        const expectedLength =
-          keySize === "128" ? 32 : keySize === "192" ? 48 : 64;
-        isValid =
-          validateHexInput(keyInput, expectedLength, `AES-${keySize} Key`) &&
-          isValid;
+        const keyFormat =
+          task5Form.querySelector('input[name="key_format"]:checked')?.value ||
+          "hex";
+        if (keyFormat === "hex") {
+          const keySize = keySizeSelect.value;
+          const expectedLength =
+            keySize === "128" ? 32 : keySize === "192" ? 48 : 64;
+          isValid =
+            validateHexInput(keyInput, expectedLength, `AES-${keySize} Key`) &&
+            isValid;
+        }
+        // Plaintext validation is handled server-side
       }
 
       const mode = task5Form.querySelector('select[name="mode"]').value;

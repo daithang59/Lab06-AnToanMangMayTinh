@@ -300,26 +300,42 @@ def task4_des():
             task4_iv="",
         )
 
-    # Key - chỉ chấp nhận hex
-    key_hex = "".join(key_hex.split())
+    # Key - chấp nhận hex hoặc plaintext
+    key_format = request.form.get("key_format") or "hex"
+    key_input = request.form.get("key") or ""
+    key_input = key_input.strip()
 
-    if len(key_hex) != 16:
-        return render_template(
-            "index.html",
-            active_tab="task4",
-            task4_result=f"ERROR: DES key phải là 16 ký tự hex (8 bytes). Bạn đang nhập {len(key_hex)} ký tự.",
-            task4_iv="",
-        )
+    if key_format == "plaintext":
+        # Nếu là plaintext, chuyển thành bytes rồi kiểm tra độ dài
+        key = key_input.encode("utf-8")
+        if len(key) != 8:
+            return render_template(
+                "index.html",
+                active_tab="task4",
+                task4_result=f"ERROR: DES key plaintext phải là 8 ký tự ASCII (8 bytes). Bạn đang nhập {len(key)} bytes.",
+                task4_iv="",
+            )
+    else:
+        # Key format là hex
+        key_hex = "".join(key_input.split())
 
-    try:
-        key = bytes.fromhex(key_hex)
-    except ValueError:
-        return render_template(
-            "index.html",
-            active_tab="task4",
-            task4_result=f"ERROR: Key không hợp lệ. Chỉ chấp nhận ký tự hex (0-9, A-F). Bạn nhập: '{key_hex}'",
-            task4_iv="",
-        )
+        if len(key_hex) != 16:
+            return render_template(
+                "index.html",
+                active_tab="task4",
+                task4_result=f"ERROR: DES key phải là 16 ký tự hex (8 bytes). Bạn đang nhập {len(key_hex)} ký tự.",
+                task4_iv="",
+            )
+
+        try:
+            key = bytes.fromhex(key_hex)
+        except ValueError:
+            return render_template(
+                "index.html",
+                active_tab="task4",
+                task4_result=f"ERROR: Key không hợp lệ. Chỉ chấp nhận ký tự hex (0-9, A-F). Bạn nhập: '{key_hex}'",
+                task4_iv="",
+            )
 
     # IV (nếu có) - chỉ chấp nhận hex
     iv = None
@@ -344,12 +360,12 @@ def task4_des():
                 task4_iv="",
             )
 
-    # Nếu dùng CBC và decrypt mà không có IV => lỗi
-    if mode.upper() != "ECB" and action == "decrypt" and iv is None:
+    # Nếu dùng CBC mà không có IV => lỗi (bắt buộc cho cả encrypt và decrypt)
+    if mode.upper() != "ECB" and iv is None:
         return render_template(
             "index.html",
             active_tab="task4",
-            task4_result="ERROR: IV is required for this mode when decrypting.",
+            task4_result="ERROR: IV is required for CBC mode. Please enter a 16-character hex IV.",
             task4_iv="",
         )
 
@@ -463,45 +479,71 @@ def task5_aes():
 
     expected_hex_len, expected_bytes, aes_name = key_size_map[key_size]
 
-    # Key validation
-    key_hex = "".join(key_hex.split())
-    if len(key_hex) != expected_hex_len:
-        return render_template(
-            "index.html",
-            active_tab="task5",
-            task5_result=f"ERROR: {aes_name} key phải là {expected_hex_len} ký tự hex ({expected_bytes} bytes). Bạn đang nhập {len(key_hex)} ký tự.",
-            task5_iv="",
-        )
-    try:
-        key = bytes.fromhex(key_hex)
-    except ValueError:
-        return render_template(
-            "index.html",
-            active_tab="task5",
-            task5_result=f"ERROR: Key không hợp lệ. Chỉ chấp nhận ký tự hex (0-9, A-F). Bạn nhập: '{key_hex}'",
-            task5_iv="",
-        )
+    # Key validation - chấp nhận hex hoặc plaintext
+    key_format = request.form.get("key_format") or "hex"
+    key_input = request.form.get("key") or ""
+    key_input = key_input.strip()
+
+    if key_format == "plaintext":
+        # Nếu là plaintext, chuyển thành bytes rồi kiểm tra độ dài
+        key = key_input.encode("utf-8")
+        if len(key) != expected_bytes:
+            return render_template(
+                "index.html",
+                active_tab="task5",
+                task5_result=f"ERROR: {aes_name} key plaintext phải là {expected_bytes} ký tự ASCII ({expected_bytes} bytes). Bạn đang nhập {len(key)} bytes.",
+                task5_iv="",
+            )
+    else:
+        # Key format là hex
+        key_hex = "".join(key_input.split())
+        if len(key_hex) != expected_hex_len:
+            return render_template(
+                "index.html",
+                active_tab="task5",
+                task5_result=f"ERROR: {aes_name} key phải là {expected_hex_len} ký tự hex ({expected_bytes} bytes). Bạn đang nhập {len(key_hex)} ký tự.",
+                task5_iv="",
+            )
+        try:
+            key = bytes.fromhex(key_hex)
+        except ValueError:
+            return render_template(
+                "index.html",
+                active_tab="task5",
+                task5_result=f"ERROR: Key không hợp lệ. Chỉ chấp nhận ký tự hex (0-9, A-F). Bạn nhập: '{key_hex}'",
+                task5_iv="",
+            )
 
     # IV
     iv = None
     if iv_hex.strip():
         iv_hex_clean = "".join(iv_hex.split())
+
+        # Validate IV length for AES (must be 32 hex chars = 16 bytes)
+        if len(iv_hex_clean) != 32:
+            return render_template(
+                "index.html",
+                active_tab="task5",
+                task5_result=f"ERROR: AES IV phải là 32 ký tự hex (16 bytes). Bạn đang nhập {len(iv_hex_clean)} ký tự.",
+                task5_iv="",
+            )
+
         try:
             iv = bytes.fromhex(iv_hex_clean)
         except ValueError:
             return render_template(
                 "index.html",
                 active_tab="task5",
-                task5_result="ERROR: Invalid hex in IV.",
+                task5_result="ERROR: IV không hợp lệ. Chỉ chấp nhận ký tự hex (0-9, A-F).",
                 task5_iv="",
             )
 
-    # CBC decrypt cần IV
-    if mode.upper() != "ECB" and action == "decrypt" and iv is None:
+    # CBC mode bắt buộc phải có IV (cả encrypt và decrypt)
+    if mode.upper() != "ECB" and iv is None:
         return render_template(
             "index.html",
             active_tab="task5",
-            task5_result="ERROR: IV is required for this mode when decrypting.",
+            task5_result="ERROR: IV is required for CBC mode. Please enter a 32-character hex IV.",
             task5_iv="",
         )
 
