@@ -370,6 +370,41 @@ function downloadTextFile(elementId, filename = "output.txt") {
   showToast(`Đã tải file: ${filename}`, "success", "Download thành công");
 }
 
+// Helper function to copy plain text (for AJAX results)
+function copyText(text, button) {
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(() => {
+      showCopyFeedback(button);
+    }).catch(err => {
+      console.error("Copy failed:", err);
+    });
+  } else {
+    // Fallback
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand("copy");
+    document.body.removeChild(textarea);
+    showCopyFeedback(button);
+  }
+}
+
+function showCopyFeedback(button) {
+  const originalHTML = button.innerHTML;
+  button.innerHTML = '<i class="bi bi-check"></i>';
+  button.classList.add("btn-success");
+  
+  setTimeout(() => {
+    button.innerHTML = originalHTML;
+    button.classList.remove("btn-success");
+  }, 1500);
+  
+  showToast("Đã copy!", "success");
+}
+
 // Helper: auto resize textarea height to fit content
 function autoResizeTextareas() {
   document.querySelectorAll("textarea.form-control").forEach((ta) => {
@@ -844,8 +879,49 @@ function displayResults(taskId, data) {
     `;
   } else if (taskId === "task2") {
     html += `
-      <p><strong>Score:</strong> ${data.score}</p>
-      <p><strong>Mapping:</strong> ${data.mapping}</p>
+      <!-- Score Section -->
+      <div class="mb-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <label class="form-label fw-semibold mb-0">
+            <i class="bi bi-graph-up me-2"></i>Score:
+          </label>
+          <div>
+            <span class="badge bg-primary" style="font-size: 1rem;">${data.score}</span>
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-secondary ms-2"
+              onclick="copyText('${data.score}', this)"
+            >
+              <i class="bi bi-clipboard"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mapping Section -->
+      <div class="card mb-3">
+        <div class="card-header bg-body-tertiary d-flex justify-content-between align-items-center">
+          <strong><i class="bi bi-shuffle me-2"></i>Mapping:</strong>
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-primary"
+            onclick="copyText('Cipher: ABCDEFGHIJKLMNOPQRSTUVWXYZ\\nPlain : ${data.mapping}', this)"
+          >
+            <i class="bi bi-clipboard"></i> Copy
+          </button>
+        </div>
+        <div class="card-body" style="font-family: 'Courier New', monospace; padding: 1rem;">
+          <div class="mb-2">
+            <span class="text-muted small">Cipher:</span><br>
+            <span style="color: #dc3545; letter-spacing: 0.15em; font-weight: 500;">ABCDEFGHIJKLMNOPQRSTUVWXYZ</span>
+          </div>
+          <div>
+            <span class="text-muted small">Plain:</span><br>
+            <span style="color: #198754; letter-spacing: 0.15em; font-weight: 500;">${data.mapping}</span>
+          </div>
+        </div>
+      </div>
+
       <div class="d-flex justify-content-between align-items-center mb-2">
         <label class="form-label fw-semibold mb-0">Plaintext:</label>
         <div class="btn-group" role="group">

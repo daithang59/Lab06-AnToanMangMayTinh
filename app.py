@@ -156,12 +156,16 @@ def task2_substitution():
 
     # Gọi hàm crack substitution
     score, mapping_str, plaintext = break_substitution(ciphertext)
+    
+    # Parse mapping_str để lấy plain alphabet
+    # Format: "cipher: abc... | plain : xyz..."
+    plain_alphabet = mapping_str.split(" | plain : ")[-1] if " | plain : " in mapping_str else mapping_str
 
     return render_template(
         "index.html",
         active_tab="task2",
         task2_score=score,
-        task2_mapping=mapping_str,
+        task2_mapping=plain_alphabet.upper(),  # Uppercase để dễ đọc
         task2_result=warning_msg + plaintext,
     )
 
@@ -557,12 +561,15 @@ def api_task2_substitution():
 
         # Gọi hàm crack substitution
         score, mapping_str, plaintext = break_substitution(ciphertext)
+        
+        # Parse mapping_str để lấy plain alphabet
+        plain_alphabet = mapping_str.split(" | plain : ")[-1] if " | plain : " in mapping_str else mapping_str
 
         return jsonify(
             {
                 "success": True,
                 "score": score,
-                "mapping": mapping_str,
+                "mapping": plain_alphabet.upper(),  # Chỉ trả plain alphabet
                 "plaintext": plaintext,
             }
         )
