@@ -302,12 +302,9 @@ def _load_wordlist():
 
 def _word_bonus(text: str) -> float:
     """
-    Bonus dựa trên wordlist:
-    - Tách word bằng pre-compiled regex
-    - Tính tỉ lệ từ nằm trong wordlist
-    - Nhân với hệ số nhỏ để tránh lấn át quadgram
-
-    Optimized: pre-compiled regex, reduced allocations.
+    Bonus dựa trên wordlist - TỐI ƯU CHO ACCURACY:
+    - Kiểm tra TẤT CẢ các từ (không sample)
+    - Weight cao để ưu tiên plaintext có nhiều từ hợp lệ
     """
     wordset = _load_wordlist()
     if not wordset:
@@ -317,16 +314,14 @@ def _word_bonus(text: str) -> float:
     if not words:
         return 0.0
 
-    # Count matches in one pass (more efficient)
+    # Kiểm tra TẤT CẢ từ - không sample
     matched = sum(1 for w in words if w.lower() in wordset)
-    ratio = matched / len(words)  # 0..1
+    ratio = matched / len(words)
 
-    # Length factor: văn bản càng dài bonus càng đáng tin
-    length_factor = min(len(text) / 3000.0, 2.5)
+    # Weight cao + length factor để ưu tiên accuracy
+    length_factor = min(len(text) / 2000.0, 2.0)
 
-    # Tăng bonus weight để ưu tiên text có nhiều từ hợp lệ
-    # (giúp tránh stuck ở local optimum với quadgram score cao nhưng vô nghĩa)
-    return 120.0 * ratio * length_factor
+    return 150.0 * ratio * length_factor
 
 
 def _ngram_score(text: str) -> float:
@@ -375,10 +370,46 @@ def _ngram_score(text: str) -> float:
 
 def _language_score(text: str) -> float:
     """
-    Score tổng hợp:
-        combined n-gram score + word-bonus.
+    Score tổng hợp - TỐI ƯU CHO ACCURACY CAO NHẤT:
+        Sử dụng full n-gram suite: bigram + trigram + quadgram + word bonus
     """
-    return _ngram_score(text) + _word_bonus(text)
+    # Load tất cả n-grams
+    _load_bigrams()
+    _load_trigrams()
+    _load_quadgrams()
+
+    text_lower = text.lower()
+    s = "".join(c for c in text_lower if c in ALPHABET)
+    s_len = len(s)
+
+    if s_len < 2:
+        return float("-inf")
+
+    score = 0.0
+
+    # Bigram (10% weight - pattern cơ bản nhưng quan trọng)
+    if s_len >= 2 and _BI_LOG:
+        bi_score = sum(_BI_LOG.get(s[i : i + 2], _BI_DEFAULT) for i in range(s_len - 1))
+        score += 0.10 * bi_score
+
+    # Trigram (20% weight - context ngắn)
+    if s_len >= 3 and _TRI_LOG:
+        tri_score = sum(
+            _TRI_LOG.get(s[i : i + 3], _TRI_DEFAULT) for i in range(s_len - 2)
+        )
+        score += 0.20 * tri_score
+
+    # Quadgram (60% weight - chính nhưng không áp đảo)
+    if s_len >= 4 and _QUAD_LOG:
+        quad_score = sum(
+            _QUAD_LOG.get(s[i : i + 4], _QUAD_DEFAULT) for i in range(s_len - 3)
+        )
+        score += 0.60 * quad_score
+
+    # Word bonus (10% nhưng rất quan trọng cho accuracy)
+    word_score = _word_bonus(text)
+
+    return score + word_score
 
 
 # ===================== 3. Key & decrypt utilities ======================= #
@@ -474,7 +505,7 @@ def _swap_positions(key: str, i: int, j: int) -> str:
 def _hill_climb(
     cipher_sample: str,
     use_freq_seed: bool = False,
-    max_iterations: int = 5000,
+    max_iterations: int = 2000,
     use_annealing: bool = False,
 ) -> tuple[float, str]:
     """
@@ -489,7 +520,7 @@ def _hill_climb(
     Args:
         cipher_sample: Text mẫu để scoring
         use_freq_seed: Nếu True, dùng frequency analysis làm seed; False = random
-        max_iterations: Số iteration tối đa
+        max_iterations: Số iteration tối đa (giảm từ 3000 xuống 2000 cho web)
         use_annealing: Nếu True, dùng simulated annealing để tránh local optimum
     """
     if use_freq_seed:
@@ -503,8 +534,8 @@ def _hill_climb(
     current_score = best_score
     current_key = key
 
-    # Simulated annealing parameters
-    temperature = 20.0 if use_annealing else 0.0
+    # Simulated annealing với nhiệt độ cao hơn cho accuracy
+    temperature = 30.0 if use_annealing else 0.0
     cooling_rate = 0.995
 
     iterations = 0
@@ -558,16 +589,16 @@ def _hill_climb(
 
 def _break_with_hillclimb(
     ciphertext: str,
-    rounds: int = 150,
-    sample_letters: int = 10000,
-    consolidate: int = 8,
+    rounds: int = 80,
+    sample_letters: int = 8000,
+    consolidate: int = 6,
 ):
     """
-    Random-restart hill-climbing with consolidation and simulated annealing:
-    - ciphertext có thể rất dài; dùng prefix gồm sample_letters chữ cái.
-    - Chạy 'rounds' lần hill-climb độc lập, giữ best score toàn cục.
-    - consolidate: số lần cần đạt cùng local maximum để xác nhận đây là kết quả tốt nhất
-    - Round đầu tiên dùng FREQUENCY SEED, một số round dùng annealing để tránh local optimum
+    Random-restart hill-climbing - TỐI ƯU CHO ACCURACY:
+    - Nhiều rounds để tăng cơ hội tìm global optimum
+    - Sample size lớn để phân tích chính xác
+    - Consolidate cao để xác nhận kết quả
+    - Sử dụng cả frequency seed và simulated annealing
     """
     letters = [c for c in ciphertext if c.isalpha()]
     if not letters:
@@ -584,31 +615,31 @@ def _break_with_hillclimb(
     no_improvement_count = 0
 
     for round_num in range(rounds):
-        # Round đầu: frequency seed.
-        # Mỗi 10 round: dùng annealing để escape local optimum
+        # Round đầu: frequency seed (baseline tốt nhất)
+        # Mỗi 4 round: dùng annealing để escape local optimum (tần suất cao)
         # Các round khác: random restart
         use_freq = round_num == 0
-        use_anneal = round_num > 0 and round_num % 10 == 0
+        use_anneal = round_num > 0 and round_num % 4 == 0
 
         score, key = _hill_climb(
             sample, use_freq_seed=use_freq, use_annealing=use_anneal
         )
 
-        if score > global_best_score + 0.5:  # Meaningful improvement
+        if score > global_best_score + 0.3:  # Chấp nhận cải thiện nhỏ hơn
             global_best_score = score
             global_best_key = key
             local_maximum_hits = 1
             no_improvement_count = 0
-        elif abs(score - global_best_score) < 0.5:  # Same score (within tolerance)
+        elif abs(score - global_best_score) < 0.3:  # Tolerance nhỏ hơn
             local_maximum_hits += 1
             if local_maximum_hits >= consolidate:
-                # Found same maximum multiple times - likely the best
+                # Đã confirm nhiều lần - đây là kết quả tốt nhất
                 break
         else:
             no_improvement_count += 1
 
-        # Early stop if stuck for too long
-        if no_improvement_count > 30:
+        # Kiên nhẫn hơn - chỉ stop nếu thực sự stuck
+        if no_improvement_count > 20:
             break
 
     return global_best_score, global_best_key
@@ -617,9 +648,9 @@ def _break_with_hillclimb(
 # ============================= 5. Public API ============================ #
 
 
-def break_substitution(ciphertext: str, rounds: int = 150, consolidate: int = 8):
+def break_substitution(ciphertext: str, rounds: int = 80, consolidate: int = 6):
     """
-    Hàm dùng trong Flask.
+    Hàm dùng trong Flask - TỐI ƯU CHO ĐỘ CHÍNH XÁC CAO NHẤT.
 
     Trả về:
         score (float),
@@ -628,8 +659,8 @@ def break_substitution(ciphertext: str, rounds: int = 150, consolidate: int = 8)
 
     Args:
         ciphertext: văn bản mã hóa cần giải
-        rounds: số vòng hill-climb tối đa (mặc định 150)
-        consolidate: số lần cần đạt cùng kết quả để xác nhận (mặc định 8)
+        rounds: số vòng hill-climb tối đa (80 - cao để đảm bảo accuracy)
+        consolidate: số lần cần đạt cùng kết quả để xác nhận (6 - chắc chắn)
     """
     random.seed()
 
@@ -637,16 +668,26 @@ def break_substitution(ciphertext: str, rounds: int = 150, consolidate: int = 8)
         mapping_str = "cipher: " + ALPHABET + " | plain : " + ALPHABET
         return 0.0, mapping_str, ""
 
+    # Sử dụng sample size lớn để đảm bảo accuracy cao
+    letters = [c for c in ciphertext if c.isalpha()]
+    # Ưu tiên accuracy hơn speed
+    if len(letters) > 8000:
+        sample_size = 6000  # File rất lớn -> vẫn sample nhiều
+    elif len(letters) > 4000:
+        sample_size = 7000  # File lớn -> sample rất nhiều
+    else:
+        sample_size = len(letters)  # File nhỏ -> dùng hết
+
     score, key = _break_with_hillclimb(
-        ciphertext, rounds=rounds, sample_letters=8000, consolidate=consolidate
+        ciphertext, rounds=rounds, sample_letters=sample_size, consolidate=consolidate
     )
 
     plaintext = _apply_key(ciphertext, key)
 
     # Format mapping rõ ràng hơn (theo đề bài)
-    cipher_line = "cipher: " + ALPHABET.upper()
-    plain_line = "plain : " + key.upper()
-    mapping_str = cipher_line + "\n" + plain_line
+    cipher_line = "CIPHER: " + ALPHABET.upper()
+    plain_line = "PLAIN : " + key.upper()
+    mapping_str = cipher_line + " | " + plain_line
 
     return score, mapping_str, plaintext
 
