@@ -324,14 +324,22 @@ def _word_bonus(text: str) -> float:
     return 150.0 * ratio * length_factor
 
 
-def _ngram_score(text: str) -> float:
+def _ngram_score(
+    text: str, weights: tuple[float, float, float] = (0.10, 0.20, 0.70)
+) -> float:
     """
     Combined n-gram scoring với weighted sum:
     - Bigram: weight thấp (pattern cơ bản)
     - Trigram: weight trung bình
     - Quadgram: weight cao nhất (optimal)
 
-    Weight distribution: 10% bigram, 20% trigram, 70% quadgram
+    Args:
+        text: văn bản cần chấm điểm
+        weights: tuple (bigram_weight, trigram_weight, quadgram_weight)
+                 Mặc định: (0.10, 0.20, 0.70)
+
+    Returns:
+        float: điểm n-gram tổng hợp
     """
     _load_bigrams()
     _load_trigrams()
@@ -345,25 +353,26 @@ def _ngram_score(text: str) -> float:
         return float("-inf")
 
     score = 0.0
+    bi_weight, tri_weight, quad_weight = weights
 
-    # Bigram (10% weight)
+    # Bigram scoring
     if s_len >= 2 and _BI_LOG:
         bi_score = sum(_BI_LOG.get(s[i : i + 2], _BI_DEFAULT) for i in range(s_len - 1))
-        score += 0.10 * bi_score
+        score += bi_weight * bi_score
 
-    # Trigram (20% weight)
+    # Trigram scoring
     if s_len >= 3 and _TRI_LOG:
         tri_score = sum(
             _TRI_LOG.get(s[i : i + 3], _TRI_DEFAULT) for i in range(s_len - 2)
         )
-        score += 0.20 * tri_score
+        score += tri_weight * tri_score
 
-    # Quadgram (70% weight - vẫn là chính)
+    # Quadgram scoring
     if s_len >= 4 and _QUAD_LOG:
         quad_score = sum(
             _QUAD_LOG.get(s[i : i + 4], _QUAD_DEFAULT) for i in range(s_len - 3)
         )
-        score += 0.70 * quad_score
+        score += quad_weight * quad_score
 
     return score
 
@@ -372,44 +381,23 @@ def _language_score(text: str) -> float:
     """
     Score tổng hợp - TỐI ƯU CHO ACCURACY CAO NHẤT:
         Sử dụng full n-gram suite: bigram + trigram + quadgram + word bonus
+
+    Weight distribution:
+        - Bigram: 10% (pattern cơ bản)
+        - Trigram: 20% (context ngắn)
+        - Quadgram: 60% (context dài - chính)
+        - Word bonus: ~10% equivalent (validation từ điển)
+
+    Returns:
+        float: điểm tổng hợp (n-gram + word bonus)
     """
-    # Load tất cả n-grams
-    _load_bigrams()
-    _load_trigrams()
-    _load_quadgrams()
+    # Sử dụng _ngram_score với weight tùy chỉnh (60% quadgram thay vì 70%)
+    ngram_score = _ngram_score(text, weights=(0.10, 0.20, 0.60))
 
-    text_lower = text.lower()
-    s = "".join(c for c in text_lower if c in ALPHABET)
-    s_len = len(s)
-
-    if s_len < 2:
-        return float("-inf")
-
-    score = 0.0
-
-    # Bigram (10% weight - pattern cơ bản nhưng quan trọng)
-    if s_len >= 2 and _BI_LOG:
-        bi_score = sum(_BI_LOG.get(s[i : i + 2], _BI_DEFAULT) for i in range(s_len - 1))
-        score += 0.10 * bi_score
-
-    # Trigram (20% weight - context ngắn)
-    if s_len >= 3 and _TRI_LOG:
-        tri_score = sum(
-            _TRI_LOG.get(s[i : i + 3], _TRI_DEFAULT) for i in range(s_len - 2)
-        )
-        score += 0.20 * tri_score
-
-    # Quadgram (60% weight - chính nhưng không áp đảo)
-    if s_len >= 4 and _QUAD_LOG:
-        quad_score = sum(
-            _QUAD_LOG.get(s[i : i + 4], _QUAD_DEFAULT) for i in range(s_len - 3)
-        )
-        score += 0.60 * quad_score
-
-    # Word bonus (10% nhưng rất quan trọng cho accuracy)
+    # Thêm word bonus để tăng accuracy
     word_score = _word_bonus(text)
 
-    return score + word_score
+    return ngram_score + word_score
 
 
 # ===================== 3. Key & decrypt utilities ======================= #
