@@ -8,14 +8,9 @@ Caesar Cipher Breaker (Optimized Version)
       from crypto.caesar import break_caesar
 - Giữ nguyên mọi ký tự không phải chữ cái (space, number, punctuation)
 
-Optimizations:
-- Cached normalized frequency for faster chi-square
-- List comprehension for string building
-- Early exit for empty text
 """
 
 import string
-from functools import lru_cache
 
 # Tần suất chữ cái tiếng Anh chuẩn (%) - converted to decimal
 ENGLISH_FREQ = {

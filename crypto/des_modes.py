@@ -125,20 +125,7 @@ import base64
 def encrypt(
     plaintext: bytes, key: bytes, mode: str, iv: bytes = None, out_format: str = "hex"
 ):
-    """
-    API đúng yêu cầu đề:
-        encrypt(plaintext, key, mode, iv=None) -> ciphertext (str)
-    - plaintext: bytes
-    - key: 8 bytes
-    - mode: 'ECB' hoặc 'CBC'
-    - iv: 8 bytes hoặc None (CBC không có iv -> auto generate)
-    - out_format: 'hex' hoặc 'base64' (dạng chuỗi trả về)
 
-    Trả về:
-        (ciphertext_str, iv_used)
-        - ciphertext_str: chuỗi hex/base64
-        - iv_used: iv thật sự (bytes), None nếu ECB
-    """
     # Dùng hàm gốc des_encrypt để xử lý
     raw_ct, iv_used = des_encrypt(plaintext, key, mode, iv)
 
@@ -155,18 +142,7 @@ def encrypt(
 def decrypt(
     ciphertext, key: bytes, mode: str, iv: bytes, in_format: str = "hex"
 ) -> bytes:
-    """
-    API đúng yêu cầu đề:
-        decrypt(ciphertext, key, mode, iv) -> plaintext
-    - ciphertext: chuỗi hex/base64 hoặc bytes (tùy in_format)
-    - key: 8 bytes
-    - mode: 'ECB' hoặc 'CBC'
-    - iv: 8 bytes (bắt buộc cho CBC)
-    - in_format: 'hex', 'base64' hoặc 'raw' (bytes)
-
-    Trả về:
-        plaintext: bytes
-    """
+    
     if isinstance(ciphertext, str):
         if in_format.lower() == "hex":
             raw_ct = bytes.fromhex(ciphertext)

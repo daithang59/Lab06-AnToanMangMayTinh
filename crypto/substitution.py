@@ -7,12 +7,6 @@ Task 2 - Monoalphabetic substitution solver
 - Bonus: dựa trên wordlist.txt (tỉ lệ từ tiếng Anh hợp lệ)
 - Tối ưu: simple hill-climbing + random restart
 
-Public API cho Flask:
-    from crypto.substitution import break_substitution
-    score, mapping_str, plaintext = break_substitution(ciphertext)
-
-CLI cho đúng format đề:
-    python -m crypto.substitution -i data/ciphertext.txt -o output_task2.txt
 """
 
 import os
@@ -20,7 +14,6 @@ import re
 import string
 import random
 from math import log
-from functools import lru_cache
 
 ALPHABET = string.ascii_lowercase
 
@@ -241,29 +234,6 @@ def _load_quadgrams():
 
     _QUAD_LOG = QUAD_LOG
     _QUAD_DEFAULT = QUAD_DEFAULT
-
-
-def _quad_score(text: str) -> float:
-    """
-    Score plaintext bằng quadgram log-prob.
-    Chỉ dùng chữ cái a-z, bỏ hết ký tự khác.
-
-    Optimized: faster string building, single pass scoring.
-    """
-    _load_quadgrams()
-    global _QUAD_LOG, _QUAD_DEFAULT
-
-    # Build letter string in one pass
-    text_lower = text.lower()
-    s = "".join(c for c in text_lower if c in ALPHABET)
-
-    s_len = len(s)
-    if s_len < 4:
-        return float("-inf")
-
-    # Calculate score (slightly faster with direct access)
-    score = sum(_QUAD_LOG.get(s[i : i + 4], _QUAD_DEFAULT) for i in range(s_len - 3))
-    return score
 
 
 # ======================== 2. Wordlist bonus ============================= #

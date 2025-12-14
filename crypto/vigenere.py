@@ -8,22 +8,10 @@ Task 3 - Vigenère cipher breaker (dùng Index of Coincidence + chi-square)
     + Chia ciphertext thành các "Caesar-subsets".
     + Giải từng subset bằng phân tích tần suất (chi-square).
 - Bước 3: Chọn key cho ra plaintext tiếng Anh nhất (chi-square nhỏ nhất).
-
-Public API cho Flask:
-    from crypto.vigenere import break_vigenere
-    key, plaintext, score = break_vigenere(ciphertext)
-
-CLI:
-    python -m crypto.vigenere -i data/cipher.txt -o output_task3.txt
-
-    output_task3.txt:
-        dòng 1: khóa (key) tìm được
-        dòng 2+: plaintext
 """
 
 import string
 import random
-from functools import lru_cache
 
 ALPHABET = string.ascii_uppercase
 ALPHABET_SET = set(ALPHABET)  # For faster membership testing
@@ -248,7 +236,7 @@ def _break_vigenere_internal(ciphertext: str, max_key_len: int = 30, top_k: int 
     best_plain = None
     best_score = float("inf")
 
-    for key_len, avg_ic in candidates:
+    for key_len, _ in candidates:
         shifts = []
         for i in range(key_len):
             subset = "".join(letters[j] for j in range(i, len(letters), key_len))

@@ -138,15 +138,6 @@ SHIFTS = [
 ]
 
 
-def _permute(block: int, table: list, n: int) -> int:
-    """Hoán vị bit block (int) theo table, output n-bit."""
-    out = 0
-    for pos in table:
-        out = (out << 1) | ((block >> (64 - pos)) & 1)
-    # Nếu n < 64, đã tương thích sẵn do table
-    return out
-
-
 def _left_rotate28(v: int, shift: int) -> int:
     """Quay trái 28-bit."""
     return ((v << shift) & 0x0FFFFFFF) | (v >> (28 - shift))
