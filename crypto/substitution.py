@@ -465,6 +465,7 @@ def _hill_climb(
     use_freq_seed: bool = False,
     max_iterations: int = 2000,
     use_annealing: bool = False,
+    round_num: int = 0,
 ) -> tuple[float, str]:
     """
     Hill-climbing tối ưu:
@@ -480,7 +481,12 @@ def _hill_climb(
         use_freq_seed: Nếu True, dùng frequency analysis làm seed; False = random
         max_iterations: Số iteration tối đa (giảm từ 3000 xuống 2000 cho web)
         use_annealing: Nếu True, dùng simulated annealing để tránh local optimum
+        round_num: Số thứ tự round hiện tại (cho logging)
     """
+    seed_type = "Frequency" if use_freq_seed else "Random"
+    anneal_str = " + Annealing" if use_annealing else ""
+    print(f"  Round {round_num+1}: {seed_type} seed{anneal_str}", end="", flush=True)
+
     if use_freq_seed:
         key = _frequency_seed(cipher_sample)
     else:
@@ -498,6 +504,8 @@ def _hill_climb(
 
     iterations = 0
     improved = True
+    swap_count = 0
+
     while improved and iterations < max_iterations:
         improved = False
         for i in range(25):
@@ -513,6 +521,7 @@ def _hill_climb(
                     plaintext = cand_plain
                     improved = True
                     iterations = 0
+                    swap_count += 1
 
                     # Track global best
                     if current_score > best_score:
@@ -530,6 +539,7 @@ def _hill_climb(
                         current_score = cand_score
                         current_key = cand_key
                         improved = True
+                        swap_count += 1
                         break
 
             if improved:
@@ -542,6 +552,7 @@ def _hill_climb(
         if use_annealing:
             temperature *= cooling_rate
 
+    print(f" → Score: {best_score:.2f} (Swaps: {swap_count})")
     return best_score, best_key
 
 
@@ -567,6 +578,11 @@ def _break_with_hillclimb(
     else:
         sample = "".join(letters)
 
+    print(f"Sample size: {len(sample)} chữ cái (từ tổng {len(letters)})")
+    print(f"Số rounds tối đa: {rounds}")
+    print(f"Consolidate threshold: {consolidate} lần")
+    print("-" * 60)
+
     global_best_score = float("-inf")
     global_best_key = ALPHABET
     local_maximum_hits = 0
@@ -580,25 +596,39 @@ def _break_with_hillclimb(
         use_anneal = round_num > 0 and round_num % 4 == 0
 
         score, key = _hill_climb(
-            sample, use_freq_seed=use_freq, use_annealing=use_anneal
+            sample,
+            use_freq_seed=use_freq,
+            use_annealing=use_anneal,
+            round_num=round_num,
         )
 
         if score > global_best_score + 0.3:  # Chấp nhận cải thiện nhỏ hơn
+            print(
+                f"    ✓ CẢI THIỆN: {global_best_score:.2f} → {score:.2f} (+{score-global_best_score:.2f})"
+            )
             global_best_score = score
             global_best_key = key
             local_maximum_hits = 1
             no_improvement_count = 0
         elif abs(score - global_best_score) < 0.3:  # Tolerance nhỏ hơn
             local_maximum_hits += 1
+            print(f"    = Trùng lặp kết quả tốt ({local_maximum_hits}/{consolidate})")
             if local_maximum_hits >= consolidate:
                 # Đã confirm nhiều lần - đây là kết quả tốt nhất
+                print(f"    ✓ XÁC NHẬN: Đạt {consolidate} lần trùng lặp → Kết thúc sớm")
                 break
         else:
             no_improvement_count += 1
 
         # Kiên nhẫn hơn - chỉ stop nếu thực sự stuck
         if no_improvement_count > 20:
+            print(f"    ✗ DỪNG: Không cải thiện sau 20 rounds")
             break
+
+    print("-" * 60)
+    print(f"KẾT QUẢ TỐT NHẤT:")
+    print(f"  Score: {global_best_score:.2f}")
+    print(f"  Mapping: {global_best_key.upper()}")
 
     return global_best_score, global_best_key
 
@@ -620,6 +650,14 @@ def break_substitution(ciphertext: str, rounds: int = 80, consolidate: int = 6):
         rounds: số vòng hill-climb tối đa (80 - cao để đảm bảo accuracy)
         consolidate: số lần cần đạt cùng kết quả để xác nhận (6 - chắc chắn)
     """
+    print("\n" + "=" * 60)
+    print("[TASK 2] BẮT ĐẦU PHÁ MÃ SUBSTITUTION CIPHER")
+    print("=" * 60)
+    print(f"Độ dài ciphertext: {len(ciphertext)} ký tự")
+    print("Phương pháp: Hill-climbing + Random restart")
+    print("Scoring: Quadgram + Trigram + Bigram + Word bonus")
+    print("-" * 60)
+
     random.seed()
 
     if not ciphertext:
@@ -646,6 +684,9 @@ def break_substitution(ciphertext: str, rounds: int = 80, consolidate: int = 6):
     cipher_line = "CIPHER: " + ALPHABET.upper()
     plain_line = "PLAIN : " + key.upper()
     mapping_str = cipher_line + " | " + plain_line
+
+    print(f"  Plaintext preview: {plaintext[:100]}...")
+    print("=" * 60 + "\n")
 
     return score, mapping_str, plaintext
 

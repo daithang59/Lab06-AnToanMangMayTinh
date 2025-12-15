@@ -104,6 +104,13 @@ def break_caesar(ciphertext: str):
     Bruteforce 26 khóa, chấm điểm từng plaintext bằng chi-square.
     Trả về (best_key, best_plaintext).
     """
+    print("\n" + "=" * 60)
+    print("[TASK 1] BẮT ĐẦU PHÁ MÃ CAESAR CIPHER")
+    print("=" * 60)
+    print(f"Độ dài ciphertext: {len(ciphertext)} ký tự")
+    print("Phương pháp: Brute-force 26 khóa + Chi-square scoring")
+    print("-" * 60)
+
     best_key = 0
     best_plain = ""
     best_score = float("inf")  # chi-square càng nhỏ càng tốt
@@ -116,10 +123,24 @@ def break_caesar(ciphertext: str):
         plain = decrypt_caesar_with_key(ciphertext, k)
         score = chi_square_score(plain)
 
+        # Cập nhật best trước khi log
         if score < best_score:
             best_score = score
             best_key = k
             best_plain = plain
+            status = "✓ BEST"
+        else:
+            status = ""
+
+        # Log mỗi khóa được thử
+        print(f"Khóa {k:2d}: Chi-square = {score:8.2f} {status}")
+
+    print("-" * 60)
+    print(f"KẾT QUẢ TỐT NHẤT:")
+    print(f"  Khóa tìm được: {best_key}")
+    print(f"  Chi-square score: {best_score:.2f}")
+    print(f"  Plaintext preview: {best_plain[:100]}...")
+    print("=" * 60 + "\n")
 
     return best_key, best_plain
 

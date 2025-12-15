@@ -225,36 +225,71 @@ def _break_vigenere_internal(ciphertext: str, max_key_len: int = 30, top_k: int 
         + Ghep thanh key, giai toan ciphertext, tinh chi-square toan cuc.
     - Chon key co chi-square nho nhat.
     """
+    print("\n" + "=" * 60)
+    print("[TASK 3] BẮT ĐẦU PHÁ MÃ VIGENÈRE CIPHER")
+    print("=" * 60)
+    print(f"Độ dài ciphertext: {len(ciphertext)} ký tự")
+    print("Phương pháp: Index of Coincidence + Chi-square")
+    print("-" * 60)
+
     letters = "".join(ch for ch in ciphertext.upper() if ch in ALPHABET)
+    print(f"Số chữ cái (A-Z): {len(letters)}")
+
     if len(letters) < 20:
         # too short to guess reliably
+        print("⚠ CẢNH BÁO: Ciphertext quá ngắn, không thể phân tích chính xác")
         return "A", decrypt_vigenere(ciphertext, "A"), float("inf")
 
+    print("\nBƯỚC 1: Tính Index of Coincidence để ước lượng độ dài khóa...")
     candidates = _guess_key_lengths_by_ic(letters, max_key_len, top_k)
+
+    print(f"\nCác độ dài khóa ứng viên (top {top_k}):")
+    for i, (klen, ic) in enumerate(candidates, 1):
+        print(f"  {i}. Key length = {klen:2d}, IC = {ic:.4f}")
+
+    print("\nBƯỚC 2: Thử giải mã với từng độ dài khóa...")
+    print("-" * 60)
 
     best_key = None
     best_plain = None
     best_score = float("inf")
 
-    for key_len, _ in candidates:
+    for idx, (key_len, ic_val) in enumerate(candidates, 1):
+        print(
+            f"\n[{idx}/{len(candidates)}] Thử key length = {key_len} (IC={ic_val:.4f})"
+        )
         shifts = []
         for i in range(key_len):
             subset = "".join(letters[j] for j in range(i, len(letters), key_len))
             shift = _best_shift_for_subset(subset)
             shifts.append(shift)
+            print(f"  Vị trí {i+1}/{key_len}: shift = {shift:2d} → '{ALPHABET[shift]}'")
 
         key = "".join(ALPHABET[s] for s in shifts)
         plain = decrypt_vigenere(ciphertext, key)
 
         chi = _chi_square_text(plain)
+        status = "✓ BEST" if chi < best_score else ""
+        print(f"  → Key: '{key}' | Chi-square: {chi:.2f} {status}")
+
         if chi < best_score:
             best_score = chi
             best_key = key
             best_plain = plain
 
     if best_key is not None:
+        original_key = best_key
         best_key = _reduce_repeating_key(best_key)
+        if best_key != original_key:
+            print(f"\n✓ Phát hiện key lặp lại: '{original_key}' → '{best_key}'")
         best_plain = decrypt_vigenere(ciphertext, best_key)
+
+    print("-" * 60)
+    print(f"KẾT QUẢ TỐT NHẤT:")
+    print(f"  Key tìm được: '{best_key}'")
+    print(f"  Chi-square score: {best_score:.2f}")
+    print(f"  Plaintext preview: {best_plain[:100]}...")
+    print("=" * 60 + "\n")
 
     return best_key, best_plain, best_score
 
